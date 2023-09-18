@@ -17,9 +17,10 @@ parser = argparse.ArgumentParser(description='Optimisation de poids de réseau d
 # Ajout des arguments
 parser.add_argument('N', type=int, help='Taille de l\'instance')
 parser.add_argument('K', type=int, help='Paramètre K')
-parser.add_argument('--nb-restarts', type=int, default=3, help='Nombre de redémarrages')
-parser.add_argument('--nb-instances', type=int, default=5, help='Nombre d\'instances')
+parser.add_argument('--nb-restarts', type=int, default=5, help='Nombre de redémarrages')
+parser.add_argument('--nb-instances', type=int, default=10, help='Nombre d\'instances')
 parser.add_argument('--sigma-init', type=float, default=0.2, help='Ecart-type initial')
+parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
 parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
 
@@ -44,7 +45,7 @@ f.close()
 
 
 # Fonction pour calculer le score moyen d'une stratégie
-def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts):
+def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts, alpha=None):
     # Cloner le réseau neuronal pour éviter de modifier les poids originaux
 
     if type_strategy == "NN":
@@ -87,15 +88,28 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
                     # Stratégie HillClimber
                     action_id = int(np.argmax(np.array(neigh)))
 
-                state, deltaScore, terminated = env.step(action_id)
-                current_score += deltaScore
+                elif type_strategy == "IteratedhillClimber":
+                    # Stratégie HillClimber itératif
+                    if max(neigh) > 0:
+                        action_id = int(np.argmax(np.array(neigh)))
+                    else:
+                        action_id = -1
+
+                if action_id >= 0:
+                    state, deltaScore, terminated = env.step(action_id)
+                    current_score += deltaScore
+
+                # action de réaliser une perturbation
+                elif action_id == -1:
+                    env.perturbation(alpha)
+                    current_score = env.score()
 
                 if current_score > bestScore:
                     bestScore = current_score
 
             average_score += bestScore
 
-    return average_score / (nb_instances * nb_restarts)
+            return average_score / (nb_instances * nb_restarts)
 
 # Fonction d'évaluation pour CMA-ES
 def evaluate_weights_NN(N, K, solution, network, path, nb_instances, nb_restarts):
@@ -118,8 +132,6 @@ def evaluate_weights_NN(N, K, solution, network, path, nb_instances, nb_restarts
     average_score = get_average_score_strategy("NN", N, K, weights, network, path, nb_instances, nb_restarts)
 
     return average_score
-
-
 
 print("Évaluation de la stratégie HillClimber")
 average_score_hillclimber = get_average_score_strategy("hillClimber", N, K, None, None, valid_path, nb_instances, nb_restarts)

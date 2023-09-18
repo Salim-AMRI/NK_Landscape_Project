@@ -2,7 +2,7 @@ import numpy as np
 
 class Nk_generator():
 
-    def __init__(self, n, k, instances, folder="/home/etud/Téléchargements/Generate/"):
+    def __init__(self, n, k, instances, folder="/home/etud/Téléchargements/Instances/train/NK_128_12/"):
         # Initialisation de la classe avec les paramètres n, k, instances et folder
         self.N = n
         self.K = k
@@ -36,4 +36,4 @@ class Nk_generator():
             fichier.close()  # Ferme le fichier
 
 # Création d'une instance de Nk_generator avec des valeurs spécifiques
-Nk_generator(64, 12, 10)
+Nk_generator(128, 12, 10)

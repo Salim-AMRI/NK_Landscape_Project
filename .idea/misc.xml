@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+    <option name="executionMode" value="BINARY" />
+    <option name="pathToExecutable" value="/usr/bin/black" />
+    <option name="sdkUUID" value="940dd63a-4324-4898-b007-81c79c17874b" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="salim_conda" project-jdk-type="Python SDK" />
+</project>

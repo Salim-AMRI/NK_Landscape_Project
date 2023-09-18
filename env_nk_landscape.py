@@ -31,6 +31,16 @@ class EnvNKlandscape:
         self.turn = 0
         return self.game_state
 
+    def perturbation(self, alpha):
+        num_bits_to_perturb = int(alpha * self.N)  # Calcul du nombre de bits à perturber
+
+        # Choisissez aléatoirement num_bits_to_perturb indices de bits à perturber
+        perturb_indices = np.random.choice(self.N, num_bits_to_perturb, replace=False)
+
+        # Inversez les valeurs des bits choisis aléatoirement
+        for index in perturb_indices:
+            self.game_state[index] = (self.game_state[index] + 1) % 2
+
     def step(self, action):
         old_value = self.game_state[action]
         self.game_state[action] = (self.game_state[action] + 1) % 2

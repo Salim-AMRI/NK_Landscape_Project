@@ -86,8 +86,8 @@ def evaluate_weights_NN(N, K, solution, network, path, nb_instances, nb_restarts
     return average_score
 
 # Paramètres initiaux
-N = 64
-K = 10
+N = 32
+K = 1
 train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/" + "train/"
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/" + "validation/"
 nb_restarts = 5
