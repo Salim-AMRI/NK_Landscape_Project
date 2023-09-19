@@ -281,7 +281,7 @@ if(type_strategy == "NN_withTabu" or type_strategy =="NN"):
         es.tell(solutions, -np.array(training_scores))
 
         # Évaluez la meilleure solution sur l'ensemble de validation
-        validation_score = evaluate_weights_NN(type_strategy, N, K, best_current_solution, list_nnet[0], valid_path, nb_instances, nb_restarts)
+        validation_score = evaluate_weights_NN(type_strategy, N, K, best_current_solution, list_nnet[0], valid_path, nb_instances, nb_restarts, nb_jobs, alpha)
         print("Score moyen sur l'ensemble de validation : " + str(validation_score))
 
         f = open(pathResult + nameResult, "a")
