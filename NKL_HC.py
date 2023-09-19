@@ -130,23 +130,27 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
                         action_id = -1
 
                 elif type_strategy == "tabu":
-                    # Stratégie HillClimber
+                    # Stratégie Tabu
                     tabuList = env.getTabuList()
 
 
-                    best_delta = -99999
-                    action_id = -1
+                    low_values = np.ones(tabuList.shape) * float("-inf")
+                    filter_neigh = np.where(tabuList < 1, neigh, low_values )
 
-                    for i in range(N):
+                    action_id = int(np.argmax(np.array(filter_neigh)))
 
-                        delta = neigh[i]
-
-                        if(tabuList[i] == 0 or delta + current_score > bestScore):
-
-                            if(delta > best_delta):
-
-                                best_delta = delta
-                                action_id = i
+                    # best_delta = -99999
+                    # action_id = -1
+                    #
+                    # for i in range(N):
+                    #
+                    #     delta = neigh[i]
+                    #
+                    #     if(tabuList[i] == 0 or delta + current_score > bestScore):
+                    #
+                    #         if(delta > best_delta):
+                    #             best_delta = delta
+                    #             action_id = i
 
 
 
