@@ -35,10 +35,19 @@ type_strategy = args.type_strategy
 reference_strategy = args.reference_strategy
 N = args.N
 K = args.K
+alpha = args.alpha
+
+
+
+
 train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 nb_restarts = args.nb_restarts
 nb_instances = args.nb_instances
+
+nb_jobs = nb_restarts*nb_instances
+
+
 sigma_init = args.sigma_init
 max_generations = args.max_generations
 
@@ -49,8 +58,120 @@ f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
 
 
+def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_run, alpha=None):
+
+    i = idx_run%nb_intances
+
+
+    name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(i) + ".txt"
+
+    #print("launch instance " + name_instance)
+
+    env = EnvNKlandscape(name_instance)
+
+    env.reset()
+    terminated = False
+    current_score = env.score()
+    bestScore = float("-inf")
+
+    while not terminated:
+        # Extraction des observations à partir de l'état
+        neigh = []
+
+        for i in range(N):
+            copied_env = copy.deepcopy(env)
+            obs, deltaFitness, terminated, = copied_env.step(i)
+            neigh.append(deltaFitness)
+
+        if type_strategy == "NN":
+            # Stratégie basée sur le réseau neuronal (NN)
+            non_ordered_neigh = copy.deepcopy(neigh)
+            neigh.sort(reverse=True)
+            neigh = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0)
+            out = network(neigh.unsqueeze(0)).squeeze(0)
+            action = out.argmax().item()
+            action_id = non_ordered_neigh.index(neigh[0][action])
+
+        if type_strategy == "NN_withTabu":
+
+            # Stratégie basée sur le réseau neuronal (NN)
+            non_ordered_neigh = copy.deepcopy(neigh)
+            tabuList = env.getTabuList()
+
+            df = pd.DataFrame()
+            df["fitness"] = neigh
+            df["tabulist"] = tabuList
+
+            df = df.sort_values(by="fitness")
+
+            sorted_neighbors = df["fitness"].values
+            sorted_tabuList = df["tabulist"].values
+
+            stacked_input = np.hstack((sorted_neighbors, sorted_tabuList))
+            stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+
+            out = network(stacked_input.unsqueeze(0)).squeeze(0)
+            action = out.argmax().item()
+
+            action_id = non_ordered_neigh.index(sorted_neighbors[action])
+
+
+        elif type_strategy == "hillClimber":
+            # Stratégie HillClimber
+            action_id = int(np.argmax(np.array(neigh)))
+
+        elif type_strategy == "IteratedhillClimber":
+            # Stratégie HillClimber itératif
+            if max(neigh) > 0:
+                action_id = int(np.argmax(np.array(neigh)))
+            else:
+                action_id = -1
+
+        elif type_strategy == "tabu":
+            # Stratégie Tabu
+            tabuList = env.getTabuList()
+
+
+            low_values = np.ones(tabuList.shape) * float("-inf")
+            filter_neigh = np.where(tabuList < 1, neigh, low_values )
+
+            action_id = int(np.argmax(np.array(filter_neigh)))
+
+            ### Critere aspiration
+
+            # best_delta = -99999
+            # action_id = -1
+            #
+            # for i in range(N):
+            #
+            #     delta = neigh[i]
+            #
+            #     if(tabuList[i] == 0 or delta + current_score > bestScore):
+            #
+            #         if(delta > best_delta):
+            #             best_delta = delta
+            #             action_id = i
+
+
+
+
+        if action_id >= 0:
+            state, deltaScore, terminated = env.step(action_id)
+            current_score += deltaScore
+
+        # action de réaliser une perturbation
+        elif action_id == -1:
+            env.perturbation(alpha)
+            current_score = env.score()
+
+        if current_score > bestScore:
+            bestScore = current_score
+
+    return bestScore
+
+
 # Fonction pour calculer le score moyen d'une stratégie
-def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts, alpha=None):
+def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
     # Cloner le réseau neuronal pour éviter de modifier les poids originaux
 
     if type_strategy == "NN":
@@ -60,121 +181,17 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
 
     average_score = 0
 
-    for i in range(nb_instances):
-        name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(i) + ".txt"
-        env = EnvNKlandscape(name_instance)
+    list_scores =  Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(type_strategy, N, K, network, path, nb_instances, idx_run, alpha=None) for idx_run in range(nb_instances*nb_restarts))
 
-        print("instance : " + str(i))
-        for j in range(nb_restarts):
-            print("restart : " + str(j))
-            env.reset()
-            terminated = False
-            current_score = env.score()
-            bestScore = float("-inf")
-
-            while not terminated:
-                # Extraction des observations à partir de l'état
-                neigh = []
-
-                for i in range(N):
-                    copied_env = copy.deepcopy(env)
-                    obs, deltaFitness, terminated, = copied_env.step(i)
-                    neigh.append(deltaFitness)
-
-
-
-
-
-                if type_strategy == "NN":
-                    # Stratégie basée sur le réseau neuronal (NN)
-                    non_ordered_neigh = copy.deepcopy(neigh)
-                    neigh.sort(reverse=True)
-                    neigh = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0)
-                    out = network(neigh.unsqueeze(0)).squeeze(0)
-                    action = out.argmax().item()
-                    action_id = non_ordered_neigh.index(neigh[0][action])
-
-                if type_strategy == "NN_withTabu":
-
-                    # Stratégie basée sur le réseau neuronal (NN)
-                    non_ordered_neigh = copy.deepcopy(neigh)
-                    tabuList = env.getTabuList()
-
-                    df = pd.DataFrame()
-                    df["fitness"] = neigh
-                    df["tabulist"] = tabuList
-
-                    df = df.sort_values(by="fitness")
-
-                    sorted_neighbors = df["fitness"].values
-                    sorted_tabuList = df["tabulist"].values
-
-                    stacked_input = np.hstack((sorted_neighbors, sorted_tabuList))
-                    stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
-
-                    out = network(stacked_input.unsqueeze(0)).squeeze(0)
-                    action = out.argmax().item()
-
-                    action_id = non_ordered_neigh.index(sorted_neighbors[action])
-
-
-                elif type_strategy == "hillClimber":
-                    # Stratégie HillClimber
-                    action_id = int(np.argmax(np.array(neigh)))
-
-                elif type_strategy == "IteratedhillClimber":
-                    # Stratégie HillClimber itératif
-                    if max(neigh) > 0:
-                        action_id = int(np.argmax(np.array(neigh)))
-                    else:
-                        action_id = -1
-
-                elif type_strategy == "tabu":
-                    # Stratégie Tabu
-                    tabuList = env.getTabuList()
-
-
-                    low_values = np.ones(tabuList.shape) * float("-inf")
-                    filter_neigh = np.where(tabuList < 1, neigh, low_values )
-
-                    action_id = int(np.argmax(np.array(filter_neigh)))
-
-                    # best_delta = -99999
-                    # action_id = -1
-                    #
-                    # for i in range(N):
-                    #
-                    #     delta = neigh[i]
-                    #
-                    #     if(tabuList[i] == 0 or delta + current_score > bestScore):
-                    #
-                    #         if(delta > best_delta):
-                    #             best_delta = delta
-                    #             action_id = i
-
-
-
-
-                if action_id >= 0:
-                    state, deltaScore, terminated = env.step(action_id)
-                    current_score += deltaScore
-
-                # action de réaliser une perturbation
-                elif action_id == -1:
-                    env.perturbation(alpha)
-                    current_score = env.score()
-
-                if current_score > bestScore:
-                    bestScore = current_score
-
-            average_score += bestScore
+    for score in list_scores:
+        average_score += score
 
     return average_score / (nb_instances * nb_restarts)
 
 
 
 # Fonction d'évaluation pour CMA-ES
-def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instances, nb_restarts):
+def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
     # Assurez-vous que la taille du vecteur solution correspond à num_params
     assert len(solution) == num_params
 
@@ -191,12 +208,14 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
     weights = [param.data.numpy() for param in params_net]
 
     # Évaluez le réseau de neurones avec les nouveaux poids
-    average_score = get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts)
+    average_score = get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts,nb_jobs, alpha)
+
+
 
     return average_score
 
 print("Évaluation de la stratégie " + reference_strategy)
-average_score_hillclimber = get_average_score_strategy(reference_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts)
+average_score_hillclimber = get_average_score_strategy(reference_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
 print("Score moyen de la stratégie " + reference_strategy + " sur l'ensemble de validation :")
 print(average_score_hillclimber)
 
@@ -227,7 +246,7 @@ if(type_strategy == "NN_withTabu" or type_strategy =="NN"):
     #max_generations = 10
 
     print("Taille de la population dans CMA-ES :", es.popsize)
-    nb_jobs = es.popsize
+
 
     # Création d'une liste de réseaux de neurones pour chaque membre de la population CMA-ES
     list_nnet = [Net(layers_size) for i in range(es.popsize)]
@@ -243,7 +262,13 @@ if(type_strategy == "NN_withTabu" or type_strategy =="NN"):
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
 
         # Évaluez les performances de chaque solution en parallèle
-        training_scores = Parallel(n_jobs=nb_jobs)(delayed(evaluate_weights_NN)(type_strategy, N, K, solution, list_nnet[idx], train_path, nb_instances, nb_restarts)  for idx, solution in enumerate(solutions))
+
+
+        training_scores = []
+        for idx, solution in enumerate(solutions):
+            print("Eval individu " + str(idx))
+            training_scores.append(evaluate_weights_NN(type_strategy, N, K, solution, list_nnet[idx], train_path, nb_instances, nb_restarts, nb_jobs, alpha))
+
 
         best_current_score = float("-inf")
         # Mettez à jour la meilleure solution trouvée par CMA-ES
