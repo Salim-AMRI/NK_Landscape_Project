@@ -223,7 +223,7 @@ if(type_strategy == "NN_withTabu" or type_strategy =="NN"):
     #max_generations = 10
 
     print("Taille de la population dans CMA-ES :", es.popsize)
-    nb_jobs = 1
+    nb_jobs = es.popsize
 
     # Création d'une liste de réseaux de neurones pour chaque membre de la population CMA-ES
     list_nnet = [Net(layers_size) for i in range(es.popsize)]
