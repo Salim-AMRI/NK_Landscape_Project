@@ -19,7 +19,6 @@ parser = argparse.ArgumentParser(description='Optimisation de poids de réseau d
 parser.add_argument('type_strategy', type=str, help='type_strategy')
 parser.add_argument('N', type=int, help='Taille de l\'instance')
 parser.add_argument('K', type=int, help='Paramètre K')
-parser.add_argument('--reference_strategy', type=str, default="hillClimber", help='reference_strategy')
 parser.add_argument('--nb-restarts', type=int, default=5, help='Nombre de redémarrages')
 parser.add_argument('--nb-instances', type=int, default=10, help='Nombre d\'instances')
 parser.add_argument('--sigma-init', type=float, default=0.2, help='Ecart-type initial')
@@ -32,7 +31,7 @@ args = parser.parse_args()
 
 # Paramètres initiaux en fonction des arguments
 type_strategy = args.type_strategy
-reference_strategy = args.reference_strategy
+
 N = args.N
 K = args.K
 alpha = args.alpha
@@ -214,10 +213,7 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
 
     return average_score
 
-print("Évaluation de la stratégie " + reference_strategy)
-average_score_hillclimber = get_average_score_strategy(reference_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
-print("Score moyen de la stratégie " + reference_strategy + " sur l'ensemble de validation :")
-print(average_score_hillclimber)
+
 
 ## Add save result
 
@@ -297,3 +293,11 @@ if(type_strategy == "NN_withTabu" or type_strategy =="NN"):
         # Mettez à jour la barre de progression
         pbar.set_postfix(avg_training_score=max(training_scores), avg_validation_score=validation_score)
         pbar.update(1)  # Incrémentation de la barre de progression
+
+else:
+
+    print("Évaluation de la stratégie " + type_strategy)
+    average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path,
+                                                           nb_instances, nb_restarts, nb_jobs)
+    print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
+    print(average_score_baseline)

@@ -11,4 +11,4 @@
 #SBATCH --cpus-per-task=20	
 
 
-python NKL_HC.py 64 $2 --seed $SLURM_ARRAY_TASK_ID 
+python NKL_HC.py $1 $2 $3 --seed $SLURM_ARRAY_TASK_ID
