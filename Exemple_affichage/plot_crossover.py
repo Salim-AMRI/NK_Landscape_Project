@@ -23,8 +23,8 @@ list_bounds = [(19270,19295),(5780,5800), (8720,8760),(9580,9600)]
 list_pos_subplot = [(1,1),(1,2), (2,1),(2,2)]
 
 
-#list_begin_size = [15, 15, 15, 15]
-list_begin_size = [0, 0, 0, 0]
+list_begin_size = [15, 15, 15, 15]
+#list_begin_size = [0, 0, 0, 0]
 
 list_end_size = [1000, 1000, 1000, 1000]
 
