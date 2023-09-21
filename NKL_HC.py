@@ -251,29 +251,3 @@ else:
     average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
     print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
     print(average_score_baseline)
-
-
-# Ajoutez un préfixe au nom du fichier de sortie en fonction de la stratégie
-if type_strategy == "NN":
-    strategy_prefix = "NN"
-elif type_strategy == "NN_withTabu":
-    strategy_prefix = "NN_withTabu"
-elif type_strategy == "hillClimber":
-    strategy_prefix = "hillClimber"
-elif type_strategy == "IteratedhillClimber":
-    strategy_prefix = "IteratedhillClimber"
-elif type_strategy == "tabu":
-    strategy_prefix = "tabu"
-else:
-    strategy_prefix = "unknown"
-
-# Créez un nom de fichier de sortie unique pour chaque stratégie
-nameResult = "test_" + strategy_prefix + "_N_" + str(N) + "_K_" + str(K) + "_" + str(datetime.date) + ".txt"
-f = open(pathResult + nameResult, "w")
-f.write("generation,avg_training_score,avg_validation_score\n")
-f.close()
-
-# Enregistrez les résultats dans le fichier de sortie approprié
-f = open(pathResult + nameResult, "a")
-f.write(str(generation) + "," + str(max(training_scores)) + "," + str(validation_score) + "\n")
-f.close()
