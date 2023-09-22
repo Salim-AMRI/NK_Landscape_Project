@@ -7,6 +7,8 @@ import cma
 import argparse
 import datetime
 import pandas as pd
+import os
+import csv
 
 # Importation de modules personnalisés
 from neural_net import Net
@@ -44,10 +46,15 @@ sigma_init = args.sigma_init
 max_generations = args.max_generations
 
 pathResult = "results/"
-nameResult = "test_N_" + str(N) + "_K_" + str(K) + "_" + str(datetime.date) + ".txt"
-f = open(pathResult + nameResult, "w")
+# Utilisez datetime.datetime.now() pour obtenir la date actuelle
+nameResult = "test_N_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+f = open(os.path.join(pathResult, nameResult), "w")
 f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
+
+hillClimber_results = []
+IteratedhillClimber_results = []
+tabou_results = []
 
 def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_run, alpha=None):
 
@@ -98,13 +105,19 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
         elif type_strategy == "hillClimber":
             # Stratégie HillClimber
             action_id = int(np.argmax(np.array(neigh)))
+            # Collecter les résultats ici
+            hillClimber_results.append((generation, current_score, action_id))
 
         elif type_strategy == "IteratedhillClimber":
             # Stratégie HillClimber itératif
             if max(neigh) > 0:
                 action_id = int(np.argmax(np.array(neigh)))
+                # Collecter les résultats ici
+                IteratedhillClimber_results.append((generation, current_score, action_id))
             else:
                 action_id = -1
+                # Collecter les résultats ici
+                IteratedhillClimber_results.append((generation, current_score, action_id))
 
         elif type_strategy == "tabu":
             # Stratégie Tabu
@@ -132,6 +145,9 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             env.perturbation(alpha)
             current_score = env.score()
 
+        # Collecter les résultats ici
+        tabou_results.append((generation, current_score, action_id))
+
         if current_score > bestScore:
             bestScore = current_score
 
@@ -154,6 +170,17 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
         average_score += score
 
     return average_score / (nb_instances * nb_restarts)
+
+# Le chemin complet pour le fichier CSV dans le dossier 'results'
+csv_file_path = pathResult + f'{type_strategy}_results.csv'
+
+with open(csv_file_path, 'w', newline='') as csvfile:
+    fieldnames = ['Generation', 'Score', 'Action_ID']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+    writer.writeheader()
+    for generation, score, action_id in hillClimber_results:
+        writer.writerow({'Generation': generation, 'Score': score, 'Action_ID': action_id})
 
 # Fonction d'évaluation pour CMA-ES
 def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
@@ -205,7 +232,7 @@ if type_strategy == "NN_withTabu" or type_strategy =="NN":
     list_nnet = [Net(layers_size) for i in range(es.popsize)]
 
     # Créez une barre de progression avec tqdm
-    pbar = tqdm(total=max_generations)
+    #pbar = tqdm(total=max_generations)
 
     # Initialisez la meilleure récompense à un score initial bas (ou négatif)
 
@@ -243,11 +270,27 @@ if type_strategy == "NN_withTabu" or type_strategy =="NN":
             np.savetxt("solutions/best_solution.csv" , best_current_solution)
 
         # Mettez à jour la barre de progression
-        pbar.set_postfix(avg_training_score=max(training_scores), avg_validation_score=validation_score)
-        pbar.update(1)  # Incrémentation de la barre de progression
+        #pbar.set_postfix(avg_training_score=max(training_scores), avg_validation_score=validation_score)
+        #pbar.update(1)  # Incrémentation de la barre de progression
 
 else:
     print("Évaluation de la stratégie " + type_strategy)
     average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
     print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
     print(average_score_baseline)
+
+    # Spécifiez le chemin complet pour le fichier CSV dans le dossier 'results'
+    file_counter = 1
+    while os.path.exists(f'results/{type_strategy}_results_{file_counter}.csv'):
+        file_counter += 1
+
+    csv_file_path = f'results/{type_strategy}_results_{file_counter}.csv'
+
+    # Vous pouvez également les enregistrer dans un fichier CSV
+    with open(csv_file_path, 'w', newline='') as csvfile:
+        fieldnames = ['Generation', 'Score', 'Action_ID']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for generation, score, action_id in hillClimber_results:
+            writer.writerow({'Generation': generation, 'Score': score, 'Action_ID': action_id})
