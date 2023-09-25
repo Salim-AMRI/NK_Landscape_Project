@@ -88,6 +88,32 @@ with open(nom_fichier_output, 'w') as fichier_sortie:
         ligne_formattee += f"\t{matrice_moyennes[i]}\t{matrice_ecart_types[i]}"  # Ajouter la moyenne et l'écart type à la fin de chaque ligne
         fichier_sortie.write(f"{ligne_formattee}\n")
 
+# Chargement des données depuis le fichier CSV 'hillClimber_results_1.csv' et calcul de la moyenne
+chemin_fichier_csv = './results/hillClimber_results_1.csv'
+valeurs_hill_climber = []
+
+with open(chemin_fichier_csv, 'r') as fichier_csv:
+    lignes_csv = fichier_csv.readlines()
+
+    # Vérifiez s'il y a au moins deux lignes dans le fichier CSV
+    if len(lignes_csv) >= 2:
+        # Ignorez la première ligne (en-tête) et lisez les données à partir de la deuxième ligne
+        for ligne_csv in lignes_csv[1:]:
+            colonnes_csv = ligne_csv.strip().split(',')
+            if len(colonnes_csv) >= 2:  # Vérifiez qu'il y a au moins 2 colonnes (pour éviter les erreurs)
+                valeur_apres_premiere_virgule = float(colonnes_csv[1])  # Récupérez la valeur après la première virgule
+                valeurs_hill_climber.append(valeur_apres_premiere_virgule)
+
+# Calcul de la moyenne des valeurs de hillClimber_results_1.csv
+if valeurs_hill_climber:
+    moyenne_hill_climber = np.mean(valeurs_hill_climber)
+else:
+    moyenne_hill_climber = 0  # Moyenne par défaut si aucune valeur n'est trouvée
+
+# Créez une liste avec la moyenne calculée de la même longueur que matrice_moyennes
+longueur_maximale = max(len(colonne) for colonne in matrice)
+moyenne_hill_climber_liste = [moyenne_hill_climber] * longueur_maximale
+
 # Créer une liste d'indices (numéro de ligne) pour l'axe x
 indices = list(range(1, len(matrice_moyennes) + 1))
 
@@ -102,6 +128,10 @@ plt.ylabel('Moyenne / Écart Type')
 plt.title('Évolution de la moyenne et de l\'écart type par rapport au nombre de générations')
 plt.legend()
 plt.grid(True)
+
+# Tracer la droite de la moyenne hillClimber
+plt.plot(indices, moyenne_hill_climber_liste[:longueur_maximale], linestyle='-', label='Moyenne Hill Climber')
+plt.legend()
 
 # Générer un nom de fichier incrémental pour le graphique
 numero_fichier_graphique = 1
