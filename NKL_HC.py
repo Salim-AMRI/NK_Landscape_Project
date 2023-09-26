@@ -48,7 +48,7 @@ max_generations = args.max_generations
 
 pathResult = "results/"
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
-nameResult = "test_N_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
 f = open(os.path.join(pathResult, nameResult), "w")
 f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
@@ -107,18 +107,18 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             # Stratégie HillClimber
             action_id = int(np.argmax(np.array(neigh)))
             # Collecter les résultats ici
-            hillClimber_results.append((generation, current_score, action_id))
+            #hillClimber_results.append((generation, current_score, action_id))
 
         elif type_strategy == "IteratedhillClimber":
             # Stratégie HillClimber itératif
             if max(neigh) > 0:
                 action_id = int(np.argmax(np.array(neigh)))
                 # Collecter les résultats ici
-                IteratedhillClimber_results.append((generation, current_score, action_id))
+                #IteratedhillClimber_results.append((generation, current_score, action_id))
             else:
                 action_id = -1
                 # Collecter les résultats ici
-                IteratedhillClimber_results.append((generation, current_score, action_id))
+                #IteratedhillClimber_results.append((generation, current_score, action_id))
 
         elif type_strategy == "tabu":
             # Stratégie Tabu
@@ -147,7 +147,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             current_score = env.score()
 
         # Collecter les résultats ici
-        tabou_results.append((generation, current_score, action_id))
+        #tabou_results.append((generation, current_score, action_id))
 
         if current_score > bestScore:
             bestScore = current_score
@@ -279,6 +279,9 @@ else:
     average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
     print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
     print(average_score_baseline)
+    f = open(pathResult + nameResult, "a")
+    f.write(str(0) + ",," + str(average_score_baseline) + "\n")
+    f.close()
 
     # Spécifiez le chemin complet pour le fichier CSV dans le dossier 'results'
     file_counter = 1
