@@ -27,6 +27,7 @@ parser.add_argument('--sigma-init', type=float, default=1, help='Ecart-type init
 parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
 parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
+parser.add_argument('--seed', type=int, default=None, help='Seed pour la génération aléatoire')
 
 # Analyse des arguments de ligne de commande
 args = parser.parse_args()
