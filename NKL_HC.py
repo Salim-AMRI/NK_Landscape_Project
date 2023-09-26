@@ -268,7 +268,7 @@ if type_strategy == "NN_withTabu" or type_strategy =="NN":
 
         if(validation_score > best_global_validation_score):
             best_global_validation_score = validation_score
-            np.savetxt("solutions/best_solution.csv" , best_current_solution)
+            np.savetxt("solutions/best_solution_" + nameResult + ".csv", best_current_solution)
 
         # Mettez à jour la barre de progression
         #pbar.set_postfix(avg_training_score=max(training_scores), avg_validation_score=validation_score)
