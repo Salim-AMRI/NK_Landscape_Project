@@ -165,7 +165,7 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
 
     average_score = 0
 
-    list_scores =  Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(type_strategy, N, K, network, path, nb_instances, idx_run, alpha=None) for idx_run in range(nb_instances*nb_restarts))
+    list_scores =  Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(type_strategy, N, K, network, path, nb_instances, idx_run, alpha=alpha) for idx_run in range(nb_instances*nb_restarts))
 
     for score in list_scores:
         average_score += score
@@ -268,7 +268,7 @@ if type_strategy == "NN_withTabu" or type_strategy =="NN":
 
         if(validation_score > best_global_validation_score):
             best_global_validation_score = validation_score
-            np.savetxt("solutions/best_solution.csv" , best_current_solution)
+            np.savetxt("solutions/best_solution_" + nameResult + ".csv" , best_current_solution)
 
         # Mettez à jour la barre de progression
         #pbar.set_postfix(avg_training_score=max(training_scores), avg_validation_score=validation_score)
@@ -276,7 +276,7 @@ if type_strategy == "NN_withTabu" or type_strategy =="NN":
 
 else:
     print("Évaluation de la stratégie " + type_strategy)
-    average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs)
+    average_score_baseline = get_average_score_strategy(type_strategy, N, K, None, None, valid_path, nb_instances, nb_restarts, nb_jobs, alpha)
     print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
     print(average_score_baseline)
     f = open(pathResult + nameResult, "a")
