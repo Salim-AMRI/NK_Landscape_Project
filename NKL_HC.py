@@ -118,15 +118,13 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             tabuList = env.getTabuList()
             stacked_input = np.hstack((np.array(neigh), np.array(tabuList)))
             
-            print(stacked_input.shape)
             stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
             
-            print(stacked_input.size())
+
             out = network(stacked_input)
             
-            print("out.size()")
-            print(out.size())
-            action = out.argmax().item()
+
+            action_id = out.argmax().item()
             
             
         elif type_strategy == "hillClimber":
@@ -233,9 +231,9 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
     return average_score
 
 ## Add save result
-if type_strategy == "NN_withTabu" or type_strategy =="NN":
+if "NN" in type_strategy:
     # Création de l'architecture du réseau de neurones
-    if(type_strategy == "NN_withTabu" or type_strategy == "NN_withTabu_unsorted"):
+    if("Tabu" in type_strategy ):
         layers_size = [2 * N, 2 * N, N]
     else:
         layers_size = [N, 2 * N, N]
