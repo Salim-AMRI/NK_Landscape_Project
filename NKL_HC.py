@@ -23,7 +23,7 @@ parser.add_argument('N', type=int, help='Taille de l\'instance')
 parser.add_argument('K', type=int, help='Paramètre K')
 parser.add_argument('--nb-restarts', type=int, default=5, help='Nombre de redémarrages')
 parser.add_argument('--nb-instances', type=int, default=10, help='Nombre d\'instances')
-parser.add_argument('--sigma-init', type=float, default=1, help='Ecart-type initial')
+parser.add_argument('--sigma-init', type=float, default=0.5, help='Ecart-type initial')
 parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
 parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
@@ -37,6 +37,7 @@ type_strategy = args.type_strategy
 N = args.N
 K = args.K
 alpha = args.alpha
+seed = args.seed
 
 train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
@@ -48,7 +49,7 @@ max_generations = args.max_generations
 
 pathResult = "results/"
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
-nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
 f = open(os.path.join(pathResult, nameResult), "w")
 f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
