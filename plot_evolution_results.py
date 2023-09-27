@@ -12,7 +12,7 @@ N = 32
 K = 2
 
 
-list_LS = ["NN_3", "NN_withTabu","_hillClimber", "tabu" ,"IteratedhillClimber"]
+list_LS = [ "NN_withTabu","NN_3","_hillClimber", "tabu" ,"IteratedhillClimber"]
 
 
 
@@ -154,10 +154,12 @@ fig.update_xaxes(title_text="Number of generations", title_font=dict(size=20))
 
 fig.update_yaxes(title_text="Average score", title_font=dict(size=20))
 
-fig.update_layout( legend=dict(font=dict(family="Courier", size=20, color="black")),
+fig.update_layout(title=dict(text="N_" + str(N) + "_K_" + str(K), font=dict(size=40)), legend=dict(font=dict(family="Courier", size=20, color="black")),
                   legend_title=dict(font=dict(family="Courier", size=20, color="blue")))
 
 fig.update_annotations(font_size=30)
+
+
 
 fig.write_image("images/results_neuroevolution_N_" + str(N) + "_K_" + str(K) + ".png")
 
