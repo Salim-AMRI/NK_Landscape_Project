@@ -172,6 +172,7 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
 
     return average_score / (nb_instances * nb_restarts)
 
+'''
 # Le chemin complet pour le fichier CSV dans le dossier 'results'
 csv_file_path = pathResult + f'{type_strategy}_results.csv'
 
@@ -182,6 +183,7 @@ with open(csv_file_path, 'w', newline='') as csvfile:
     writer.writeheader()
     for generation, score, action_id in hillClimber_results:
         writer.writerow({'Generation': generation, 'Score': score, 'Action_ID': action_id})
+'''
 
 # Fonction d'évaluation pour CMA-ES
 def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
@@ -283,6 +285,7 @@ else:
     f.write(str(0) + ",," + str(average_score_baseline) + "\n")
     f.close()
 
+'''
     # Spécifiez le chemin complet pour le fichier CSV dans le dossier 'results'
     file_counter = 1
     while os.path.exists(f'results/{type_strategy}_results_{file_counter}.csv'):
@@ -298,3 +301,4 @@ else:
         writer.writeheader()
         for generation, score, action_id in hillClimber_results:
             writer.writerow({'Generation': generation, 'Score': score, 'Action_ID': action_id})
+'''

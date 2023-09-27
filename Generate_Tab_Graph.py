@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Dossier contenant les fichiers .txt
-dossier = './Res'
+dossier = './results'
 
 # Liste pour stocker les colonnes de données extraites de chaque fichier
 matrice = []
@@ -75,10 +75,10 @@ for i in range(longueur_maximale):
 
 # Générer un nom de fichier incrémental pour le fichier de sortie
 numero_fichier_output = 1
-nom_fichier_output = f'./results/output_{numero_fichier_output}.txt'
+nom_fichier_output = f'./Res/output_{numero_fichier_output}.txt'
 while os.path.isfile(nom_fichier_output):
     numero_fichier_output += 1
-    nom_fichier_output = f'./results/output_{numero_fichier_output}.txt'
+    nom_fichier_output = f'./Res/output_{numero_fichier_output}.txt'
 
 # Écrire la matrice avec les colonnes de moyennes et d'écart types dans le fichier de sortie
 with open(nom_fichier_output, 'w') as fichier_sortie:
@@ -88,23 +88,23 @@ with open(nom_fichier_output, 'w') as fichier_sortie:
         ligne_formattee += f"\t{matrice_moyennes[i]}\t{matrice_ecart_types[i]}"  # Ajouter la moyenne et l'écart type à la fin de chaque ligne
         fichier_sortie.write(f"{ligne_formattee}\n")
 
-# Chargement des données depuis le fichier CSV 'hillClimber_results_1.csv' et calcul de la moyenne
-chemin_fichier_csv = './results/hillClimber_results_1.csv'
+# Chargement des données depuis le fichier TXT 'hillClimber_results_1.txt' et calcul de la moyenne
+chemin_fichier_txt = './results/hillClimber_results_1.txt'
 valeurs_hill_climber = []
 
-with open(chemin_fichier_csv, 'r') as fichier_csv:
-    lignes_csv = fichier_csv.readlines()
+with open(chemin_fichier_txt, 'r') as fichier_txt:
+    lignes_txt = fichier_txt.readlines()
 
-    # Vérifiez s'il y a au moins deux lignes dans le fichier CSV
-    if len(lignes_csv) >= 2:
+    # Vérifiez s'il y a au moins deux lignes dans le fichier TXT
+    if len(lignes_txt) >= 2:
         # Ignorez la première ligne (en-tête) et lisez les données à partir de la deuxième ligne
-        for ligne_csv in lignes_csv[1:]:
-            colonnes_csv = ligne_csv.strip().split(',')
-            if len(colonnes_csv) >= 2:  # Vérifiez qu'il y a au moins 2 colonnes (pour éviter les erreurs)
-                valeur_apres_premiere_virgule = float(colonnes_csv[1])  # Récupérez la valeur après la première virgule
+        for ligne_txt in lignes_txt[1:]:
+            colonnes_txt = ligne_txt.strip().split(',')
+            if len(colonnes_txt) >= 2:  # Vérifiez qu'il y a au moins 2 colonnes (pour éviter les erreurs)
+                valeur_apres_premiere_virgule = float(colonnes_txt[1])  # Récupérez la valeur après la première virgule
                 valeurs_hill_climber.append(valeur_apres_premiere_virgule)
 
-# Calcul de la moyenne des valeurs de hillClimber_results_1.csv
+# Calcul de la moyenne des valeurs de hillClimber_results_1.txt
 if valeurs_hill_climber:
     moyenne_hill_climber = np.mean(valeurs_hill_climber)
 else:
@@ -119,9 +119,7 @@ indices = list(range(1, len(matrice_moyennes) + 1))
 
 # Tracer le graphique de la moyenne avec la zone d'écart type
 plt.figure(figsize=(10, 6))
-#plt.plot(indices, matrice_moyennes, marker='o', linestyle='-', label='Moyenne')
 plt.plot(indices, matrice_moyennes, linestyle='-', label='Moyenne')  # Ligne continue pour la moyenne
-#plt.fill_between(indices, [m + s for m, s in zip(matrice_moyennes, matrice_ecart_types)], [m - s for m, s in zip(matrice_moyennes, matrice_ecart_types)], alpha=0.2, label='Écart Type')
 plt.fill_between(indices, [m + s for m, s in zip(matrice_moyennes, matrice_ecart_types)], [m - s for m, s in zip(matrice_moyennes, matrice_ecart_types)], alpha=0.2, linestyle='-', label='Écart Type')  # Zone continue pour l'écart type
 plt.xlabel('Nombre de générations')
 plt.ylabel('Moyenne / Écart Type')
@@ -141,7 +139,7 @@ while os.path.isfile(nom_fichier_graphique):
     nom_fichier_graphique = f'graphique_evolution_{numero_fichier_graphique}.png'
 
 # Sauvegarder le graphique dans un fichier image incrémental
-plt.savefig("./results/" + nom_fichier_graphique)
+plt.savefig("./Res/" + nom_fichier_graphique)
 
 # Afficher le graphique
 plt.show()
