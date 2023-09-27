@@ -27,7 +27,7 @@ parser.add_argument('--sigma-init', type=float, default=0.5, help='Ecart-type in
 parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
 parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
-parser.add_argument('--seed', type=int, default=None, help='Seed pour la génération aléatoire')
+parser.add_argument('--seed', type=int, default=0, help='Seed pour la génération aléatoire')
 
 # Analyse des arguments de ligne de commande
 args = parser.parse_args()
@@ -182,7 +182,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
 def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
     # Cloner le réseau neuronal pour éviter de modifier les poids originaux
 
-    if type_strategy == "NN":
+    if "NN" in type_strategy:
         # Charger les poids dans le réseau neuronal cloné
         for i, param in enumerate(network.parameters()):
             param.data.copy_(torch.from_numpy(weights[i]).type(torch.FloatTensor))
