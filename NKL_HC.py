@@ -45,7 +45,6 @@ nb_restarts = args.nb_restarts
 nb_instances = args.nb_instances
 nb_jobs = nb_restarts*nb_instances
 
-nb_jobs = 1
 
 sigma_init = args.sigma_init
 max_generations = args.max_generations
