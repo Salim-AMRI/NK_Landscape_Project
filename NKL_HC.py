@@ -44,6 +44,9 @@ valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 nb_restarts = args.nb_restarts
 nb_instances = args.nb_instances
 nb_jobs = nb_restarts*nb_instances
+
+nb_jobs = 1
+
 sigma_init = args.sigma_init
 max_generations = args.max_generations
 
@@ -88,7 +91,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             action = out.argmax().item()
             action_id = non_ordered_neigh.index(neigh[0][action])
 
-        if type_strategy == "NN_withTabu":
+        elif type_strategy == "NN_withTabu":
             # Stratégie basée sur le réseau neuronal (NN with Tabu)
             non_ordered_neigh = copy.deepcopy(neigh)
             tabuList = env.getTabuList()
@@ -104,6 +107,29 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             action = out.argmax().item()
             action_id = non_ordered_neigh.index(sorted_neighbors[action])
 
+        elif type_strategy == "NN_unsorted":
+
+            neigh = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0)
+            out = network(neigh.unsqueeze(0)).squeeze(0)
+            action_id = out.argmax().item()
+                    
+        elif type_strategy == "NN_withTabu_unsorted":
+
+            neigh = torch.tensor(neigh, dtype=torch.float32)
+            tabuList = env.getTabuList()
+            stacked_input = np.hstack((np.array(neigh), np.array(tabuList)))
+            
+            print(stacked_input.shape)
+            stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+            
+            print(stacked_input.size())
+            out = network(stacked_input)
+            
+            print("out.size()")
+            print(out.size())
+            action = out.argmax().item()
+            
+            
         elif type_strategy == "hillClimber":
             # Stratégie HillClimber
             action_id = int(np.argmax(np.array(neigh)))
@@ -210,7 +236,7 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
 ## Add save result
 if type_strategy == "NN_withTabu" or type_strategy =="NN":
     # Création de l'architecture du réseau de neurones
-    if(type_strategy == "NN_withTabu"):
+    if(type_strategy == "NN_withTabu" or type_strategy == "NN_withTabu_unsorted"):
         layers_size = [2 * N, 2 * N, N]
     else:
         layers_size = [N, 2 * N, N]
