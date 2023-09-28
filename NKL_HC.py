@@ -13,6 +13,7 @@ import csv
 # Importation de modules personnalisés
 from neural_net import Net
 from env_nk_landscape import EnvNKlandscape
+import torch.nn.functional as F
 
 # Création du parser d'arguments
 parser = argparse.ArgumentParser(description='Optimisation de poids de réseau de neurones avec CMA-ES')
@@ -44,7 +45,6 @@ valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 nb_restarts = args.nb_restarts
 nb_instances = args.nb_instances
 nb_jobs = nb_restarts*nb_instances
-
 
 sigma_init = args.sigma_init
 max_generations = args.max_generations
@@ -90,7 +90,18 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             action = out.argmax().item()
             action_id = non_ordered_neigh.index(neigh[0][action])
 
-        elif type_strategy == "NN_withTabu":
+        if type_strategy == "NNsoftmax":
+            # Stratégie basée sur le réseau neuronal (NN)
+            non_ordered_neigh = copy.deepcopy(neigh)
+            neigh.sort(reverse=True)
+            neigh = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0)
+            out = network(neigh.unsqueeze(0)).squeeze(0)
+            test = F.gumbel_softmax(out, tau=1, hard=True)
+            action = test.argmax().item()
+            action_id = non_ordered_neigh.index(neigh[0][action])
+            
+            
+        elif type_strategy == "NNsoftmax_withTabu":
             # Stratégie basée sur le réseau neuronal (NN with Tabu)
             non_ordered_neigh = copy.deepcopy(neigh)
             tabuList = env.getTabuList()
@@ -103,6 +114,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             stacked_input = np.hstack((sorted_neighbors, sorted_tabuList))
             stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
             out = network(stacked_input.unsqueeze(0)).squeeze(0)
+            test = F.gumbel_softmax(out, tau=1, hard=True)
             action = out.argmax().item()
             action_id = non_ordered_neigh.index(sorted_neighbors[action])
 
@@ -133,6 +145,18 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             # Collecter les résultats ici
             #hillClimber_results.append((generation, current_score, action_id))
 
+        elif type_strategy == "hillClimberSoftmax":
+            # Stratégie HillClimber
+            
+            neigh = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0)
+            test = F.gumbel_softmax(neigh, tau=1, hard=True)
+            action_id = test.argmax().item()
+            
+            #action_id = int(np.argmax(np.array(neigh)))
+            # Collecter les résultats ici
+            #hillClimber_results.append((generation, current_score, action_id))
+            
+            
         elif type_strategy == "IteratedhillClimber":
             # Stratégie HillClimber itératif
             if max(neigh) > 0:
