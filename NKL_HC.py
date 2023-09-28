@@ -1,19 +1,19 @@
-import torch
+# Importation de bibliotheque
 import numpy as np
+import pandas as pd
 import copy
-from joblib import Parallel, delayed
-from tqdm import tqdm
-import cma
 import argparse
 import datetime
-import pandas as pd
+import torch
+import cma
 import os
-from Instances_Generator import Nk_generator
-
+from joblib import Parallel, delayed
+#from tqdm import tqdm
 
 # Importation de modules personnalisés
 from neural_net import Net
 from env_nk_landscape import EnvNKlandscape
+from Instances_Generator import Nk_generator
 import torch.nn.functional as F
 
 # Création du parser d'arguments
@@ -35,22 +35,22 @@ parser.add_argument('--seed', type=int, default=0, help='Seed pour la générati
 args = parser.parse_args()
 
 # Paramètres initiaux en fonction des arguments
-type_strategy = args.type_strategy
 N = args.N
 K = args.K
-alpha = args.alpha
 seed = args.seed
+alpha = args.alpha
+sigma_init = args.sigma_init
+nb_restarts = args.nb_restarts
+nb_instances = args.nb_instances
+type_strategy = args.type_strategy
+max_generations = args.max_generations
 
 train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
-nb_restarts = args.nb_restarts
-nb_instances = args.nb_instances
+pathResult = "results/"
+
 nb_jobs = nb_restarts*nb_instances
 
-sigma_init = args.sigma_init
-max_generations = args.max_generations
-
-pathResult = "results/"
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
 nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
 f = open(os.path.join(pathResult, nameResult), "w")
@@ -262,9 +262,6 @@ if "NN" in type_strategy:
     initial_solution = np.random.randn(num_params)
     es = cma.CMAEvolutionStrategy(initial_solution, sigma_init)
 
-    # Nombre de générations dans CMA-ES
-    #max_generations = 10
-
     print("Taille de la population dans CMA-ES :", es.popsize)
 
     # Création d'une liste de réseaux de neurones pour chaque membre de la population CMA-ES
@@ -279,7 +276,7 @@ if "NN" in type_strategy:
 
     for generation in range(max_generations):
         # Générer de nouvelles instances de formation à chaque itération
-        Nk_generator(N, K, nb_instances, train_path)
+        Nk_generator(N, K, nb_instances)
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
 
         # Évaluez les performances de chaque solution en parallèle

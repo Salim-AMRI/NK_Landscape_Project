@@ -1,0 +1,2 @@
+Moyenne HillClimber : 22.991995190000004
+Écart Type HillClimber : 0.0988342222559551

@@ -1,18 +1,29 @@
 import numpy as np
+import os
+import shutil  # Importez le module 'shutil' pour la suppression de fichiers et de dossiers
 
 class Nk_generator():
 
-    def __init__(self, n, k, instances, folder="/home/etud/Téléchargements/Instances/train/NK_128_12/"):
-        # Initialisation de la classe avec les paramètres n, k, instances et folder
+    def __init__(self, n, k, instances, base_folder="/home/etud/Téléchargements/Instances/train/"):
+        # Initialisation de la classe avec les paramètres n, k, instances et le dossier de base
         self.N = n
         self.K = k
         self.instances = instances
-        self.folder = folder
+        self.base_folder = base_folder
+
+        # Construisez le chemin complet du dossier de train en fonction de N et K
+        self.train_folder = os.path.join(base_folder, f'NK_{self.N}_{self.K}')
+
+        # Assurez-vous que le dossier de train existe, sinon, créez-le
+        os.makedirs(self.train_folder, exist_ok=True)
+
+        # Supprimez le contenu du dossier de train existant s'il y en a
+        self.clean_train_folder()
 
         # Pour chaque instance, créer un fichier et y écrire les données
         for i in range(self.instances):
-            fichier = open(self.folder + "nk_" + str(self.N) + "_" + str(self.K) + "_" + str(i) + ".txt", "w")
-            fichier.write(str(self.N) + " " + str(self.K))  # Écrit la taille N et la complexité K en début de fichier
+            fichier = open(os.path.join(self.train_folder, f"nk_{self.N}_{self.K}_{i}.txt"), "w")
+            fichier.write(str(self.N) + " " + str(self.K))
 
             # Générer les voisins de chaque élément dans le paysage NK
             for x in range(self.N):
@@ -33,7 +44,9 @@ class Nk_generator():
                 for y in range(2 ** (self.K + 1)):
                     fichier.write(
                         "\n" + str(round(np.random.random(), 6)))  # Écrit des valeurs aléatoires dans le fichier
-            fichier.close()  # Ferme le fichier
+            fichier.close()
 
-# Création d'une instance de Nk_generator avec des valeurs spécifiques
-Nk_generator(128, 12, 10)
+    # Supprimez le contenu du dossier de train existant s'il y en a
+    def clean_train_folder(self):
+        if os.path.exists(self.train_folder):
+            shutil.rmtree(self.train_folder)
