@@ -8,6 +8,8 @@ import argparse
 import datetime
 import pandas as pd
 import os
+from Instances_Generator import Nk_generator
+
 
 # Importation de modules personnalisés
 from neural_net import Net
@@ -276,6 +278,8 @@ if "NN" in type_strategy:
     best_global_validation_score = float("-inf")
 
     for generation in range(max_generations):
+        # Générer de nouvelles instances de formation à chaque itération
+        Nk_generator(N, K, nb_instances, train_path)
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
 
         # Évaluez les performances de chaque solution en parallèle
