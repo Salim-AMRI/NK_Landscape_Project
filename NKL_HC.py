@@ -11,10 +11,11 @@ from joblib import Parallel, delayed
 #from tqdm import tqdm
 
 # Importation de modules personnalisés
-from neural_net import Net
+from neural_net import Net, InvariantNNet
 from env_nk_landscape import EnvNKlandscape
 from Instances_Generator import Nk_generator
 import torch.nn.functional as F
+
 
 # Création du parser d'arguments
 parser = argparse.ArgumentParser(description='Optimisation de poids de réseau de neurones avec CMA-ES')
@@ -54,6 +55,12 @@ else:
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 pathResult = "results/"
 
+
+if not os.path.exists("solutions"):
+    os.makedirs("solutions")
+if not os.path.exists("tmp"):
+    os.makedirs("tmp")
+
 nb_jobs = nb_restarts*nb_instances
 
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
@@ -67,6 +74,8 @@ IteratedhillClimber_results = []
 tabou_results = []
 
 def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_run, alpha=None):
+
+    print("Trajectory : " + str(idx_run))
 
     i = idx_run%nb_intances
     name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(i) + ".txt"
@@ -83,9 +92,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
         neigh = []
 
         for i in range(N):
-            copied_env = copy.deepcopy(env)
-            obs, deltaFitness, terminated, = copied_env.step(i)
-            neigh.append(deltaFitness)
+            neigh.append(env.getDeltaFitness(i))
 
         if type_strategy == "NN":
             # Stratégie basée sur le réseau neuronal (NN)
@@ -106,7 +113,22 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             action = test.argmax().item()
             action_id = non_ordered_neigh.index(neigh[0][action])
             
-            
+        elif type_strategy == "NN_withTabu":
+            # Stratégie basée sur le réseau neuronal (NN with Tabu)
+            non_ordered_neigh = copy.deepcopy(neigh)
+            tabuList = env.getTabuList()
+            df = pd.DataFrame()
+            df["fitness"] = neigh
+            df["tabulist"] = tabuList
+            df = df.sort_values(by="fitness")
+            sorted_neighbors = df["fitness"].values
+            sorted_tabuList = df["tabulist"].values
+            stacked_input = np.hstack((sorted_neighbors, sorted_tabuList))
+            stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+            out = network(stacked_input.unsqueeze(0)).squeeze(0)
+            action = out.argmax().item()
+            action_id = non_ordered_neigh.index(sorted_neighbors[action])
+
         elif type_strategy == "NNsoftmax_withTabu":
             # Stratégie basée sur le réseau neuronal (NN with Tabu)
             non_ordered_neigh = copy.deepcopy(neigh)
@@ -121,7 +143,7 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             stacked_input = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
             out = network(stacked_input.unsqueeze(0)).squeeze(0)
             test = F.gumbel_softmax(out, tau=1, hard=True)
-            action = out.argmax().item()
+            action = test.argmax().item()
             action_id = non_ordered_neigh.index(sorted_neighbors[action])
 
         elif type_strategy == "NN_unsorted":
@@ -143,8 +165,48 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             
 
             action_id = out.argmax().item()
-            
-            
+
+
+        elif type_strategy == "InvariantNN":
+
+            stacked_input_th = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
+            out = network(stacked_input_th).squeeze(0)
+
+            action_id = out.argmax().item()
+
+        elif type_strategy == "InvariantNN_softmax":
+
+
+            stacked_input_th = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
+            out = network(stacked_input_th).squeeze(0)
+            test = F.gumbel_softmax(out, tau=1, hard=True)
+            action_id = test.argmax().item()
+
+        elif type_strategy == "InvariantNN_withTabu":
+
+            tabuList = env.getTabuList()
+            stacked_input = np.vstack((neigh, tabuList))
+            stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+            stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
+
+            out = network(stacked_input_th).squeeze(0)
+
+            action_id = out.argmax().item()
+
+        elif type_strategy == "InvariantNN_withTabu_softmax":
+
+            tabuList = env.getTabuList()
+            stacked_input = np.vstack((neigh, tabuList))
+            stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+
+            stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
+
+            out = network(stacked_input_th).squeeze(2).squeeze(0)
+
+            test = F.gumbel_softmax(out, tau=1, hard=True)
+
+            action_id = test.argmax().item()
+
         elif type_strategy == "hillClimber":
             # Stratégie HillClimber
             action_id = int(np.argmax(np.array(neigh)))
@@ -230,7 +292,7 @@ def get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_i
 def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instances, nb_restarts, nb_jobs, alpha=None):
     # Assurez-vous que la taille du vecteur solution correspond à num_params
     assert len(solution) == num_params
-
+    params_net = list(network.parameters())
     # Remodelez le vecteur de poids en tant que paramètres du réseau de neurones
     start = 0
     for param in params_net:
@@ -250,13 +312,27 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
 ## Add save result
 if "NN" in type_strategy:
     # Création de l'architecture du réseau de neurones
-    if("Tabu" in type_strategy ):
-        layers_size = [2 * N, 2 * N, N]
+    if("InvariantNN" in type_strategy):
+
+        if ("Tabu" in type_strategy):
+            layers_size = [2, 10, 5, 1]
+        else:
+            layers_size = [1, 10, 5, 1]
+
     else:
-        layers_size = [N, 2 * N, N]
+        if("Tabu" in type_strategy ):
+            layers_size = [2 * N, 2 * N, N]
+        else:
+            layers_size = [N, 2 * N, N]
 
     # Initialisation du réseau de neurones
-    nnet = Net(layers_size)
+    # Initialisation du réseau de neurones
+    if (  "InvariantNN" in type_strategy):
+        nnet = InvariantNNet(N, True, layers_size)
+    else:
+        nnet = Net(layers_size)
+
+
     params_net = list(nnet.parameters())
 
     # Paramètres CMA-ES
@@ -281,10 +357,11 @@ if "NN" in type_strategy:
 
     for generation in range(max_generations):
 
+        print("start instances generation")
         if(args.use_trainset == False):
             # Générer de nouvelles instances de formation à chaque itération
             Nk_generator(N, K, nb_instances, train_path)
-
+        print("end instances generation")
 
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
 

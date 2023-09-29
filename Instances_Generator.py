@@ -4,7 +4,7 @@ import shutil  # Importez le module 'shutil' pour la suppression de fichiers et 
 
 class Nk_generator():
 
-    def __init__(self, n, k, instances, base_folder="/home/etud/Téléchargements/Instances/train/"):
+    def __init__(self, n, k, instances, base_folder):
         # Initialisation de la classe avec les paramètres n, k, instances et le dossier de base
         self.N = n
         self.K = k
@@ -12,16 +12,20 @@ class Nk_generator():
         self.base_folder = base_folder
 
         # Construisez le chemin complet du dossier de train en fonction de N et K
-        self.train_folder = os.path.join(base_folder, f'NK_{self.N}_{self.K}')
+        #self.train_folder = os.path.join(base_folder, f'NK_{self.N}_{self.K}')
+
+        self.train_folder = base_folder
 
         # Assurez-vous que le dossier de train existe, sinon, créez-le
         os.makedirs(self.train_folder, exist_ok=True)
 
         # Supprimez le contenu du dossier de train existant s'il y en a
-        self.clean_train_folder()
+        #self.clean_train_folder()
 
         # Pour chaque instance, créer un fichier et y écrire les données
         for i in range(self.instances):
+
+            print(self.train_folder)
             fichier = open(os.path.join(self.train_folder, f"nk_{self.N}_{self.K}_{i}.txt"), "w")
             fichier.write(str(self.N) + " " + str(self.K))
 

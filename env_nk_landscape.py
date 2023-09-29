@@ -54,6 +54,38 @@ class EnvNKlandscape:
         for index in perturb_indices:
             self.game_state[index] = (self.game_state[index] + 1) % 2
 
+
+    ### Verifier cette fonction
+    def getDeltaFitness(self, action):
+
+        old_value = self.game_state[action]
+        self.game_state[action] = (self.game_state[action] + 1) % 2
+        deltaFitness = 0
+
+        for link in self.links:
+            if action in link:
+                malus = []
+                bonus = []
+                for i in link[:-1]:
+                    bonus.append(self.game_state[i])
+                    if i == action:
+                        malus.append(old_value)
+                    else:
+                        malus.append(self.game_state[i])
+                malus_index = 0
+                bonus_index = 0
+                for i in range(self.K + 1):
+                    malus_index += (2 ** (self.K - i)) * malus[i]
+                    bonus_index += (2 ** (self.K - i)) * bonus[i]
+
+                deltaFitness -= link[-1][int(malus_index)]
+                deltaFitness += link[-1][int(bonus_index)]
+
+        self.game_state[action] = (self.game_state[action] + 1) % 2
+
+        return deltaFitness
+
+
     def step(self, action):
         old_value = self.game_state[action]
         self.game_state[action] = (self.game_state[action] + 1) % 2
