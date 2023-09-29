@@ -30,6 +30,7 @@ parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits per
 parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
 parser.add_argument('--seed', type=int, default=0, help='Seed pour la génération aléatoire')
+parser.add_argument('--use_trainset',  default=False, action='store_true')
 
 # Analyse des arguments de ligne de commande
 args = parser.parse_args()
@@ -45,7 +46,11 @@ nb_instances = args.nb_instances
 type_strategy = args.type_strategy
 max_generations = args.max_generations
 
-train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
+if(args.use_trainset):
+    train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
+else:
+    train_path = "./tmp/"
+
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 pathResult = "results/"
 
@@ -275,8 +280,12 @@ if "NN" in type_strategy:
     best_global_validation_score = float("-inf")
 
     for generation in range(max_generations):
-        # Générer de nouvelles instances de formation à chaque itération
-        Nk_generator(N, K, nb_instances)
+
+        if(args.use_trainset == False):
+            # Générer de nouvelles instances de formation à chaque itération
+            Nk_generator(N, K, nb_instances, train_path)
+
+
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
 
         # Évaluez les performances de chaque solution en parallèle
