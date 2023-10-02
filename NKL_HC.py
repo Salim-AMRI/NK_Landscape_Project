@@ -73,7 +73,7 @@ if not os.path.exists("tmp"):
 
 
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
-nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
+nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
 f = open(os.path.join(pathResult, nameResult), "w")
 f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
