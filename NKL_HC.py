@@ -79,7 +79,6 @@ tabou_results = []
 
 def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_run, alpha=None):
 
-    print("Trajectory : " + str(idx_run))
 
     i = idx_run%nb_intances
     name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(i) + ".txt"
@@ -295,11 +294,6 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             env.perturbation(alpha)
             current_score = env.score()
 
-        print("action_id")
-        print(action_id)
-
-
-
         # Collecter les résultats ici
         #tabou_results.append((generation, current_score, action_id))
 
@@ -398,7 +392,7 @@ if "NN" in type_strategy:
         print("start instances generation")
         if(args.use_trainset == False):
             # Générer de nouvelles instances de formation à chaque itération
-            Nk_generator(N, K, nb_instances, train_path)
+            Nk_generator(N, K, nb_instances, train_path, seed)
         print("end instances generation")
 
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
