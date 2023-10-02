@@ -229,15 +229,13 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             tabuList = env.getVectLastTabuAction()
             stacked_input = np.vstack((neigh, tabuList))
             stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
-
             stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
 
-            out = network(stacked_input_th).squeeze(2).squeeze(0)
+            out = network(stacked_input_th).squeeze(0)
 
-            test = F.gumbel_softmax(out, tau=1, hard=True)
-
-            action_id = test.argmax().item()
-
+            action_id = out.argmax().item()
+            
+            
 
         elif type_strategy == "hillClimber":
             # Stratégie HillClimber
