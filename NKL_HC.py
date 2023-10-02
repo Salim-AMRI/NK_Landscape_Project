@@ -93,13 +93,13 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
     env.reset()
     terminated = False
     current_score = env.score()
-    bestScore = float("-inf")
+    bestScore = current_score
 
     while not terminated:
         # Extraction des observations à partir de l'état
         neigh = []
 
-        if("rawInfo" in type_strategy):
+        if("rawInput" in type_strategy):
             for i in range(N):
                 neigh.append(env.getDeltaFitness(i) + current_score)
         else:
@@ -222,16 +222,16 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
             action_id = test.argmax().item()
 
 
-        elif type_strategy == "InvariantNN_rawInfo":
+        elif type_strategy == "InvariantNN_rawInput":
 
             stacked_input_th = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
             out = network(stacked_input_th).squeeze(0)
 
             action_id = out.argmax().item()
 
-        elif type_strategy == "InvariantNN_withTabu_rawInfo":
+        elif type_strategy == "InvariantNN_withTabu_rawInput":
 
-            tabuList = env.getVectLastTabuAction()
+            tabuList = env.getNormalizedTabuTurn()
             stacked_input = np.vstack((neigh, tabuList))
             stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
             stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
@@ -240,6 +240,48 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
 
             action_id = out.argmax().item()
             
+
+        elif type_strategy == "InvariantNN_rawInput_generalInfo":
+
+            currentScore_np = np.ones(N) * current_score
+            bestScore_np = np.ones(N) * bestScore
+            
+            stacked_input = np.vstack((neigh, currentScore_np, bestScore_np))
+            
+            #print("stacked_input")
+            #print(stacked_input)
+            #print(stacked_input.shape)
+            
+            stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+            stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
+
+            out = network(stacked_input_th).squeeze(0)
+
+            action_id = out.argmax().item()
+            
+            
+        elif type_strategy == "InvariantNN_withTabu_rawInput_generalInfo":
+
+            #currentTurn_np = np.ones(N) * env.getTurn()
+            
+            currentScore_np = np.ones(N) * current_score
+            bestScore_np = np.ones(N) * bestScore
+
+            
+            tabuList = env.getNormalizedTabuTurn()
+            #tabuList =  env.getNormalizedTabuTurn()
+            stacked_input = np.vstack((neigh, tabuList, currentScore_np, bestScore_np))
+            
+            #print("stacked_input")
+            #print(stacked_input)
+            #print(stacked_input.shape)
+            
+            stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+            stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
+
+            out = network(stacked_input_th).squeeze(0)
+
+            action_id = out.argmax().item()
             
 
         elif type_strategy == "hillClimber":
@@ -344,16 +386,34 @@ def evaluate_weights_NN(type_strategy, N, K, solution, network, path, nb_instanc
     average_score = get_average_score_strategy(type_strategy, N, K, weights, network, path, nb_instances, nb_restarts,nb_jobs, alpha)
     return average_score
 
+
 ## Add save result
 if "NN" in type_strategy:
     # Création de l'architecture du réseau de neurones
     if("InvariantNN" in type_strategy):
 
-        if ("Tabu" in type_strategy):
-            layers_size = [2, 10, 5, 1]
+        if("generalInfo" in type_strategy ):
+        
+            if("Tabu" in type_strategy):
+                layers_size = [4, 10, 5, 1]
+            else:
+                layers_size = [3, 10, 5, 1]
+                
         else:
-            layers_size = [1, 10, 5, 1]
-
+            if ("Tabu" in type_strategy):
+                layers_size = [2, 10, 5, 1]
+            else:
+                layers_size = [1, 10, 5, 1]
+            
+        
+        
+        
+            
+        #if ("Tabu" in type_strategy):
+            #layers_size = [2, 20, 20 , 10, 5, 1]
+        #else:
+            #layers_size = [1, 20, 20 , 10, 5, 1]
+            
     else:
         if("Tabu" in type_strategy ):
             layers_size = [2 * N, 2 * N, N]

@@ -31,26 +31,26 @@ class EnvNKlandscape:
         self.tabuList = np.zeros(self.N)
         self.tabuTime = 3 + int(0.1*self.N)
 
-
-
-
+        
+    def getTurn(self):
+        
+        return self.turn
 
     def getTabuList(self):
         return self.tabuList
 
-    def getVectLastTabuAction(self):
+    def getNormalizedTabuTurn(self):
 
-        vectLastTabuAction = np.zeros(self.N)
-
-        for i in range(self.N):
-
-            if(self.tabuTurn[i] != 0):
-
-                vectLastTabuAction[i] = self.turn - self.tabuTurn[i] + 1
-
-        return vectLastTabuAction
-
-
+        if( self.turn > 0):
+            return self.tabuTurn/self.turn
+        else:
+            return self.tabuTurn
+            
+    def getTabuTurn(self):
+        
+        return self.tabuTurn
+    
+    
     def reset(self):
         self.game_state = np.random.randint(2, size=self.N)
         self.turn = 0
