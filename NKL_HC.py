@@ -49,13 +49,16 @@ type_strategy = args.type_strategy
 max_generations = args.max_generations
 nb_jobs = args.nb_jobs
 
+torch.manual_seed(seed)
+np.random.seed(seed)
+
 if(nb_jobs == -1):
     nb_jobs = nb_instances*nb_restarts
 
 if(args.use_trainset):
     train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
 else:
-    train_path = "./tmp/"
+    train_path = "./tmp/seed" + str(seed) + "/"
 
 valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
 pathResult = "results/"
@@ -68,7 +71,7 @@ if not os.path.exists("tmp"):
 
 
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
-nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
+nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt"
 f = open(os.path.join(pathResult, nameResult), "w")
 f.write("generation,avg_training_score,avg_validation_score\n")
 f.close()
