@@ -24,11 +24,12 @@ parser = argparse.ArgumentParser(description='Optimisation de poids de réseau d
 parser.add_argument('type_strategy', type=str, help='type_strategy')
 parser.add_argument('N', type=int, help='Taille de l\'instance')
 parser.add_argument('K', type=int, help='Paramètre K')
-parser.add_argument('--nb-restarts', type=int, default=5, help='Nombre de redémarrages')
-parser.add_argument('--nb-instances', type=int, default=10, help='Nombre d\'instances')
-parser.add_argument('--sigma-init', type=float, default=0.5, help='Ecart-type initial')
+parser.add_argument('--nb_restarts', type=int, default=5, help='Nombre de redémarrages')
+parser.add_argument('--nb_instances', type=int, default=10, help='Nombre d\'instances')
+parser.add_argument('--nb_jobs', type=int, default=-1, help='Nombre de jobs')
+parser.add_argument('--sigma_init', type=float, default=0.5, help='Ecart-type initial')
 parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
-parser.add_argument('--max-generations', type=int, default=10000, help='Nombre de générations')
+parser.add_argument('--max_generations', type=int, default=10000, help='Nombre de générations')
 parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
 parser.add_argument('--seed', type=int, default=0, help='Seed pour la génération aléatoire')
 parser.add_argument('--use_trainset',  default=False, action='store_true')
@@ -46,6 +47,10 @@ nb_restarts = args.nb_restarts
 nb_instances = args.nb_instances
 type_strategy = args.type_strategy
 max_generations = args.max_generations
+nb_jobs = args.nb_jobs
+
+if(nb_jobs == -1):
+    nb_jobs = nb_instances*nb_restarts
 
 if(args.use_trainset):
     train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
@@ -61,7 +66,6 @@ if not os.path.exists("solutions"):
 if not os.path.exists("tmp"):
     os.makedirs("tmp")
 
-nb_jobs = nb_restarts*nb_instances
 
 # Utilisez datetime.datetime.now() pour obtenir la date actuelle
 nameResult = "test_strategy_" + type_strategy + "_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
@@ -91,8 +95,14 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
         # Extraction des observations à partir de l'état
         neigh = []
 
-        for i in range(N):
-            neigh.append(env.getDeltaFitness(i))
+        if("rawInfo" in type_strategy):
+            for i in range(N):
+                neigh.append(env.getDeltaFitness(i) + current_score)
+        else:
+            for i in range(N):
+                neigh.append(env.getDeltaFitness(i))
+
+
 
         if type_strategy == "NN":
             # Stratégie basée sur le réseau neuronal (NN)
@@ -207,6 +217,29 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
 
             action_id = test.argmax().item()
 
+
+        elif type_strategy == "InvariantNN_rawInfo":
+
+            stacked_input_th = torch.tensor(neigh, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
+            out = network(stacked_input_th).squeeze(0)
+
+            action_id = out.argmax().item()
+
+        elif type_strategy == "InvariantNN_withTabu_rawInfo":
+
+            tabuList = env.getVectLastTabuAction()
+            stacked_input = np.vstack((neigh, tabuList))
+            stacked_input_th = torch.tensor(stacked_input, dtype=torch.float32).unsqueeze(0)
+
+            stacked_input_th = torch.transpose(stacked_input_th, 1, 2)
+
+            out = network(stacked_input_th).squeeze(2).squeeze(0)
+
+            test = F.gumbel_softmax(out, tau=1, hard=True)
+
+            action_id = test.argmax().item()
+
+
         elif type_strategy == "hillClimber":
             # Stratégie HillClimber
             action_id = int(np.argmax(np.array(neigh)))
@@ -261,6 +294,11 @@ def get_Score_trajectory(type_strategy, N, K, network, path, nb_intances, idx_ru
         elif action_id == -1:
             env.perturbation(alpha)
             current_score = env.score()
+
+        print("action_id")
+        print(action_id)
+
+
 
         # Collecter les résultats ici
         #tabou_results.append((generation, current_score, action_id))
