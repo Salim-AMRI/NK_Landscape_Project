@@ -9,6 +9,7 @@ import cma
 import os
 from joblib import Parallel, delayed
 #from tqdm import tqdm
+import random
 
 # Importation de modules personnalisés
 from neural_net import Net, InvariantNNet
@@ -51,6 +52,7 @@ nb_jobs = args.nb_jobs
 
 torch.manual_seed(seed)
 np.random.seed(seed)
+random.seed(seed)
 
 if(nb_jobs == -1):
     nb_jobs = nb_instances*nb_restarts
@@ -374,7 +376,7 @@ if "NN" in type_strategy:
 
     # Initialisation de CMA-ES avec un vecteur de poids initial aléatoire
     initial_solution = np.random.randn(num_params)
-    es = cma.CMAEvolutionStrategy(initial_solution, sigma_init)
+    es = cma.CMAEvolutionStrategy(initial_solution, sigma_init, {'seed':seed})
 
     print("Taille de la population dans CMA-ES :", es.popsize)
 
@@ -393,7 +395,7 @@ if "NN" in type_strategy:
         print("start instances generation")
         if(args.use_trainset == False):
             # Générer de nouvelles instances de formation à chaque itération
-            Nk_generator(N, K, nb_instances, train_path, seed)
+            Nk_generator(N, K, nb_instances, train_path)
         print("end instances generation")
 
         solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
