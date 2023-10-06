@@ -4,7 +4,7 @@ import shutil  # Importez le module 'shutil' pour la suppression de fichiers et 
 
 class Nk_generator():
 
-    def __init__(self, n, k, instances, base_folder, seed):
+    def __init__(self, n, k, instances, base_folder):
         # Initialisation de la classe avec les paramètres n, k, instances et le dossier de base
         self.N = n
         self.K = k
@@ -26,7 +26,7 @@ class Nk_generator():
         for i in range(self.instances):
 
             print(self.train_folder)
-            fichier = open(os.path.join(self.train_folder, f"nk_{self.N}_{self.K}_{i}_{seed}.txt"), "w")
+            fichier = open(os.path.join(self.train_folder, f"nk_{self.N}_{self.K}_{i}.txt"), "w")
             fichier.write(str(self.N) + " " + str(self.K))
 
             # Générer les voisins de chaque élément dans le paysage NK
