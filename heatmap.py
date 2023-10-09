@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Définissez le chemin du dossier contenant les fichiers journaux
 log_directory = 'log_trajectory'
 
-# Assurez-vous que le répertoire de journalisation existe
+# Creation du répertoire Log (si elle n'existe pas)
 if not os.path.exists(log_directory):
     print(f"Le répertoire {log_directory} n'existe pas.")
     exit()
