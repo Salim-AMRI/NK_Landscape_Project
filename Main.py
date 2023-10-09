@@ -29,7 +29,7 @@ from strategies.Tabu import Tabu
 
 def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False):
 
-    print(idx_run)
+
     # Déterminez le numéro d'instance et de redémarrage
     num_instance = idx_run % nb_intances
     num_restart = idx_run // nb_intances

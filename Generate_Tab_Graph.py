@@ -1,252 +1,213 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
 
-# Dossier contenant les fichiers .txt
-dossier = './results'
+parser = argparse.ArgumentParser(description='Génération de graphe')
 
-# Liste pour stocker les colonnes de données extraites de chaque fichier
-train_matrice = []
-valid_matrice = []
-valeurs_hillclimber = []
+parser.add_argument('N', type=int, help='Taille de l\'instance')
+parser.add_argument('K', type=int, help='Paramètre K')
+parser.add_argument('ftype_strategy', type=str, help='first_type_strategy')
+parser.add_argument('stype_strategy', type=str, help='second_type_strategy')
+parser.add_argument('--directory', type=str, default='./results', help='Répertoire d\'entrée des fichiers')
+#parser.add_argument('--keywords', nargs='+', type=str, default=['InvariantNN_128_K_8'], help='Mots-clés de recherche')
+#parser.add_argument('--localsearch-keywords', nargs='+', type=str, default=['hillClimber_128_K_8'], help='Mots-clés de recherche pour localSearch')
 
-#### Valid_NN
+args = parser.parse_args()
 
-# Parcourir tous les fichiers dans le dossier
-for nom_fichier in os.listdir(dossier):
-    if nom_fichier.endswith('.txt') and 'NN' in nom_fichier:
-        chemin_fichier = os.path.join(dossier, nom_fichier)
+# Fonction pour enregistrer les graphiques dans le dossier "Res"
+def save_plot_to_res(filename):
+    # Assurez-vous que le dossier "Res" existe, sinon, créez-le
+    if not os.path.exists("./Res"):
+        os.makedirs("./Res")
 
-        # Ouvrir le fichier en mode lecture
-        with open(chemin_fichier, 'r') as fichier:
-            # Créer une liste pour stocker les données extraites de ce fichier
-            colonne = []
+    # Enregistrez le graphique dans le dossier "Res"
+    plt.savefig(os.path.join("./Res", filename))
+    print(f"Graphique enregistré sous : ./Res/{filename}")
 
-            # Lire les lignes du fichier
-            lignes = fichier.readlines()
+def extract_data_from_file(file_path, keyword):
+    column_data = {'valid': [], 'train': []}
 
-            # Parcourir chaque ligne et extraire la valeur après la 2e virgule
-            for ligne in lignes:
-                # Diviser la ligne en utilisant la virgule comme séparateur
-                colonnes = ligne.strip().split(',')
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
 
-                # Vérifier que la ligne contient au moins trois colonnes
-                if len(colonnes) >= 3:
-                    # Extraire la valeur après la 2e virgule (indice 2)
-                    valeur_apres_deuxieme_virgule = colonnes[2].strip()
+        for line in lines:
+            columns = line.strip().split(',')
 
-                    # Assurez-vous que la valeur est un nombre avant de l'ajouter à la colonne
-                    try:
-                        valeur_reelle = float(valeur_apres_deuxieme_virgule)
-                        colonne.append(valeur_reelle)
-                    except ValueError:
-                        # Gérer le cas où la valeur n'est pas un nombre
-                        pass
+            if len(columns) >= 3:
+                try:
+                    value_valid = float(columns[2].strip())
+                    value_train = float(columns[1].strip())
 
-            # Vérifier que la colonne ne contient pas de NaN
-            if not any(np.isnan(colonne)):
-                # Ajouter la colonne de données extraites de ce fichier à la matrice
-                valid_matrice.append(colonne)
+                    if not np.isnan(value_valid):
+                        column_data['valid'].append(value_valid)
 
-# Vérifier la longueur maximale des colonnes
-longueur_maximale = max(len(colonne) for colonne in valid_matrice)
+                    if not np.isnan(value_train):
+                        column_data['train'].append(value_train)
+                except ValueError:
+                    pass
 
-# Calculer la moyenne de chaque ligne en utilisant la somme des valeurs valides
-matrice_moyennes = []
+    return column_data
 
-for i in range(longueur_maximale):
-    ligne_moyennes = [colonne[i] for colonne in valid_matrice if i < len(colonne)]
-    valeurs_valides = [valeur for valeur in ligne_moyennes if not np.isnan(valeur)]
+def extract_and_process_data(directory, keywords):
+    data_matrices = {'valid': [], 'train': []}
+    means_list = {'valid': [], 'train': []}
+    std_devs_list = {'valid': [], 'train': []}
+    max_list = {'valid': [], 'train': []}
+    min_list = {'valid': [], 'train': []}
 
-    if valeurs_valides:
-        moyenne_ligne = sum(valeurs_valides) / len(valeurs_valides)
+    for keyword in keywords:
+        data_matrix = {'valid': [], 'train': []}
+
+        for filename in os.listdir(directory):
+            if filename.endswith('.txt') and keyword in filename:
+                file_path = os.path.join(directory, filename)
+
+                column_data = extract_data_from_file(file_path, keyword)
+
+                for data_type in ['valid', 'train']:
+                    data = column_data[data_type]
+
+                    if data:
+                        data_matrix[data_type].append(data)
+
+        for data_type in ['valid', 'train']:
+            if data_matrix[data_type]:
+                max_length = max(len(column) for column in data_matrix[data_type])
+            else:
+                max_length = 0
+
+            means = []
+            std_devs = []
+            max_values = []
+            min_values = []
+
+            for i in range(max_length):
+                valid_values = [column[i] for column in data_matrix[data_type] if i < len(column) and not np.isnan(column[i])]
+
+                if valid_values:
+                    mean = sum(valid_values) / len(valid_values)
+                    max_val = max(valid_values)
+                    min_val = min(valid_values)
+                else:
+                    mean = np.nan
+                    max_val = np.nan
+                    min_val = np.nan
+
+                means.append(mean)
+                max_values.append(max_val)
+                min_values.append(min_val)
+
+                if len(valid_values) > 1:
+                    std_dev = np.std(valid_values, ddof=1)
+                else:
+                    std_dev = np.nan
+
+                std_devs.append(std_dev)
+
+            data_matrices[data_type].append(data_matrix[data_type])
+            means_list[data_type].append(means)
+            std_devs_list[data_type].append(std_devs)
+            max_list[data_type].append(max_values)
+            min_list[data_type].append(min_values)
+
+    return data_matrices, means_list, std_devs_list, max_list, min_list
+
+def extract_localSearch_data(directory, keywords):
+    values_localSearch = []
+    for filename in os.listdir(directory):
+        for keyword in keywords:
+            if filename.endswith('.txt') and keyword in filename:
+                file_path = os.path.join(directory, filename)
+
+                with open(file_path, 'r') as file:
+                    lines = file.readlines()
+
+                    if len(lines) > 1:
+                        second_line = lines[1].strip()
+                        second_line_elements = second_line.split(',')
+
+                        if len(second_line_elements) > 2:
+                            value_localSearch = second_line_elements[2].strip()
+
+                            try:
+                                value_reelle = float(value_localSearch)
+                                values_localSearch.append(value_reelle)
+                            except ValueError:
+                                pass
+
+    if values_localSearch:  # Vérifiez si la liste n'est pas vide
+        mean_localSearch = np.nanmean(values_localSearch)
+        std_dev_localSearch = np.nanstd(values_localSearch, ddof=1)
     else:
-        moyenne_ligne = np.nan  # Si aucune valeur valide n'est trouvée
-    matrice_moyennes.append(moyenne_ligne)
+        mean_localSearch = np.nan
+        std_dev_localSearch = np.nan
 
-# Calculer l'écart type de chaque ligne en utilisant les valeurs valides
-matrice_ecart_types = []
+    return mean_localSearch, std_dev_localSearch
 
-for i in range(longueur_maximale):
-    ligne_ecart_types = [colonne[i] for colonne in valid_matrice if i < len(colonne)]
-    valeurs_valides = [valeur for valeur in ligne_ecart_types if not np.isnan(valeur)]
+def plot_data_evolution(indices, data, localSearch_data, max_list, min_list, save_filename=None):
+    plt.figure(figsize=(10, 6))
+    plt.xlim(0, max(indices))
+    cmap = plt.colormaps['tab10']
+    data_types = ['valid', 'train']
 
-    if len(valeurs_valides) > 1:  # Il faut au moins 2 valeurs pour calculer l'écart type
-        ecart_type_ligne = np.std(valeurs_valides, ddof=1)  # ddof=1 pour calculer l'écart type non biaisé
+    for data_type in data_types:
+        for i, (means, std_devs) in enumerate(zip(data['means'][data_type], data['std_devs'][data_type])):
+            if means:  # Vérifie si des données sont disponibles
+                label = f'{data_type.capitalize()}_{args.keywords[i]}'
+                x_values = indices[:len(means)]  # Tronquer les indices si nécessaire
+                plt.plot(x_values, means, linestyle='-', label=f'{label}_Moyenne')
+                plt.fill_between(x_values, [m + s for m, s in zip(means, std_devs)],
+                                 [m - s for m, s in zip(means, std_devs)], alpha=0.2, linestyle='-',
+                                 label=f'{label}_Écart_Type')
+    # Ajoutez les courbes correspondant aux valeurs maximales et minimales
+    plt.plot(indices, max_list['valid'][i], linestyle='--', label=f'{args.keywords[i]}_Max', color=cmap(i))
+    plt.plot(indices, min_list['valid'][i], linestyle='--', label=f'{args.keywords[i]}_Min', color=cmap(i))
+
+    mean_localSearch, std_dev_localSearch = localSearch_data
+    plt.axhline(y=mean_localSearch, color='r', linestyle='-', label='HC_Moyenne')
+    plt.fill_between(indices, [mean_localSearch + std_dev_localSearch] * len(indices),
+                     [mean_localSearch - std_dev_localSearch] * len(indices), color='r', alpha=0.2,
+                     label='HC_Écart_Type')
+
+    plt.xlabel('Number of Generations')
+    plt.ylabel('Mean / Std Dev')
+    plt.title('Evolution of Mean and Std Dev vs. Number of Generations')
+    plt.legend()
+    plt.grid(True)
+
+    if save_filename:
+        # Génère un nom de fichier incremental pour le graphique
+        num = 1
+        filename = f'evolution_graph_{num}.png'
+        while os.path.isfile(os.path.join("./Res", filename)):
+            num += 1
+            filename = f'evolution_graph_{num}.png'
+
+        # Enregistre le graphique dans un fichier image incremental
+        save_plot_to_res(filename)
+
+    plt.show()
+
+if __name__ == "__main__":
+    #directory = './results'
+    #keywords = ['InvariantNN_128_K_8_']
+    #localSearch_keywords = ['hillClimber_128_K_8']
+
+    keywords = [f'{args.ftype_strategy}_{args.N}_K_{args.K}']
+    localSearch_keywords = [f'{args.stype_strategy}_{args.N}_K_{args.K}']
+
+    # Mettez à jour la manière dont vous déballez les valeurs renvoyées par extract_and_process_data
+    data_matrices, means_list, std_devs_list, max_list, min_list = extract_and_process_data(args.directory, args.keywords)
+
+    if means_list['train']:
+        indices = list(range(1, len(means_list['train'][0]) + 1))
     else:
-        ecart_type_ligne = np.nan  # Si moins de 2 valeurs valides sont trouvées
-    matrice_ecart_types.append(ecart_type_ligne)
+        indices = []  # Ou définissez des indices par défaut
 
-# Générer un nom de fichier incrémental pour le fichier de sortie
-numero_fichier_output = 1
-nom_fichier_output = f'./Res/output_valid_{numero_fichier_output}.txt'
-while os.path.isfile(nom_fichier_output):
-    numero_fichier_output += 1
-    nom_fichier_output = f'./Res/output_valid_{numero_fichier_output}.txt'
+    # Extraction des données localSearch
+    localSearch_data = extract_localSearch_data(args.directory, args.localSearch_keywords)
 
-# Écrire la matrice avec les colonnes de moyennes et d'écart types dans le fichier de sortie
-with open(nom_fichier_output, 'w') as fichier_sortie:
-    for i in range(longueur_maximale):
-        # Construire la ligne formatée en utilisant les indices
-        ligne_formattee = '\t'.join([str(colonne[i]) for colonne in valid_matrice if i < len(colonne)])
-        ligne_formattee += f"\t{matrice_moyennes[i]}\t{matrice_ecart_types[i]}"  # Ajouter la moyenne et l'écart type à la fin de chaque ligne
-        fichier_sortie.write(f"{ligne_formattee}\n")
-
-#### train_NN
-
-# Parcourir tous les fichiers dans le dossier
-for nom_fichier in os.listdir(dossier):
-    if nom_fichier.endswith('.txt') and 'NN' in nom_fichier:
-        chemin_fichier = os.path.join(dossier, nom_fichier)
-
-        # Ouvrir le fichier en mode lecture
-        with open(chemin_fichier, 'r') as fichier:
-            # Créer une liste pour stocker les données extraites de ce fichier
-            colonne = []
-
-            # Lire les lignes du fichier
-            lignes = fichier.readlines()
-
-            # Parcourir chaque ligne et extraire la valeur après la 2e virgule
-            for ligne in lignes:
-                # Diviser la ligne en utilisant la virgule comme séparateur
-                colonnes = ligne.strip().split(',')
-
-                # Vérifier que la ligne contient au moins trois colonnes
-                if len(colonnes) >= 3:
-                    # Extraire la valeur après la 2e virgule (indice 2)
-                    valeur_apres_premiere_virgule = colonnes[1].strip()
-
-                    # Assurez-vous que la valeur est un nombre avant de l'ajouter à la colonne
-                    try:
-                        valeur_reelle = float(valeur_apres_premiere_virgule)
-                        colonne.append(valeur_reelle)
-                    except ValueError:
-                        # Gérer le cas où la valeur n'est pas un nombre
-                        pass
-
-            # Vérifier que la colonne ne contient pas de NaN
-            if not any(np.isnan(colonne)):
-                # Ajouter la colonne de données extraites de ce fichier à la matrice
-                train_matrice.append(colonne)
-
-# Vérifier la longueur maximale des colonnes
-longueur_maximale = max(len(colonne) for colonne in valid_matrice)
-
-# Calculer la moyenne de chaque ligne en utilisant la somme des valeurs valides
-matrice_moyennes_train = []
-
-for i in range(longueur_maximale):
-    ligne_moyennes = [colonne[i] for colonne in train_matrice if i < len(colonne)]
-    valeurs_valides = [valeur for valeur in ligne_moyennes if not np.isnan(valeur)]
-
-    if valeurs_valides:
-        moyenne_ligne = sum(valeurs_valides) / len(valeurs_valides)
-    else:
-        moyenne_ligne = np.nan  # Si aucune valeur valide n'est trouvée
-    matrice_moyennes_train.append(moyenne_ligne)
-
-# Calculer l'écart type de chaque ligne en utilisant les valeurs valides
-matrice_ecart_types_train = []
-
-for i in range(longueur_maximale):
-    ligne_ecart_types = [colonne[i] for colonne in train_matrice if i < len(colonne)]
-    valeurs_valides = [valeur for valeur in ligne_ecart_types if not np.isnan(valeur)]
-
-    if len(valeurs_valides) > 1:  # Il faut au moins 2 valeurs pour calculer l'écart type
-        ecart_type_ligne = np.std(valeurs_valides, ddof=1)  # ddof=1 pour calculer l'écart type non biaisé
-    else:
-        ecart_type_ligne = np.nan  # Si moins de 2 valeurs valides sont trouvées
-    matrice_ecart_types_train.append(ecart_type_ligne)
-
-# Générer un nom de fichier incrémental pour le fichier de sortie
-numero_fichier_output = 1
-nom_fichier_output = f'./Res/output_train_{numero_fichier_output}.txt'
-while os.path.isfile(nom_fichier_output):
-    numero_fichier_output += 1
-    nom_fichier_output = f'./Res/output_train_{numero_fichier_output}.txt'
-
-# Écrire la matrice avec les colonnes de moyennes et d'écart types dans le fichier de sortie
-with open(nom_fichier_output, 'w') as fichier_sortie:
-    for i in range(longueur_maximale):
-        # Construire la ligne formatée en utilisant les indices
-        ligne_formattee = '\t'.join([str(colonne[i]) for colonne in valid_matrice if i < len(colonne)])
-        ligne_formattee += f"\t{matrice_moyennes[i]}\t{matrice_ecart_types[i]}"  # Ajouter la moyenne et l'écart type à la fin de chaque ligne
-        fichier_sortie.write(f"{ligne_formattee}\n")
-
-############ hillclimber
-
-# Parcourir tous les fichiers dans le dossier
-for nom_fichier in os.listdir(dossier):
-    if nom_fichier.endswith('.txt') and 'hillClimber' in nom_fichier:
-        chemin_fichier = os.path.join(dossier, nom_fichier)
-
-        # Ouvrir le fichier en mode lecture
-        with open(chemin_fichier, 'r') as fichier:
-            # Créer une liste pour stocker les données extraites de ce fichier
-            colonne = []
-
-            # Lire les lignes du fichier
-            lignes = fichier.readlines()
-
-            # Parcourir chaque ligne et extraire la valeur après la 2e virgule de la 2e ligne
-            if len(lignes) > 1:
-                deuxieme_ligne = lignes[1].strip()
-                deuxieme_ligne_elements = deuxieme_ligne.split(',')
-                if len(deuxieme_ligne_elements) > 2:
-                    valeur_hillclimber = deuxieme_ligne_elements[2].strip()
-                    try:
-                        valeur_reelle = float(valeur_hillclimber)
-                        valeurs_hillclimber.append(valeur_reelle)
-                    except ValueError:
-                        pass
-
-# Calculer la moyenne des valeurs hillClimber
-moyenne_hillclimber = np.nanmean(valeurs_hillclimber)
-# Calculer l'écart type des valeurs hillClimber
-ecart_type_hillclimber = np.nanstd(valeurs_hillclimber, ddof=1)
-
-# Générer un nom de fichier incrémental pour le fichier .txt
-numero_fichier_txt = 1
-nom_fichier_txt = f'hillclimber_moyenne_{numero_fichier_txt}.txt'
-while os.path.isfile(os.path.join("./Res", nom_fichier_txt)):
-    numero_fichier_txt += 1
-    nom_fichier_txt = f'hillclimber_moyenne_{numero_fichier_txt}.txt'
-
-# Écrire la moyenne hillClimber dans le fichier .txt
-with open(os.path.join("./Res", nom_fichier_txt), 'w') as fichier_txt:
-    fichier_txt.write(f"Moyenne HillClimber : {moyenne_hillclimber}\n")
-    fichier_txt.write(f"Écart Type HillClimber : {ecart_type_hillclimber}\n")
-
-### Graphique
-
-# Créer une liste d'indices (numéro de ligne) pour l'axe x
-indices = list(range(1, len(matrice_moyennes) + 1))
-
-# Tracer le graphique de la moyenne avec la zone d'écart type
-plt.figure(figsize=(10, 6))
-plt.xlim(0, max(indices))
-plt.axhline(y=moyenne_hillclimber, color='r', linestyle='-', label='HC_Moyenne')  # Droite horizontale pour la moyenne hillClimber
-plt.fill_between(indices, [moyenne_hillclimber + ecart_type_hillclimber] * len(indices), [moyenne_hillclimber - ecart_type_hillclimber] * len(indices), color='r', alpha=0.2, label='HC_Écart_Type')  # Zone continue pour l'écart type hillClimber
-plt.plot(indices, matrice_moyennes_train, linestyle='-', label='T_Moyenne')  # Ligne continue pour la moyenne
-plt.fill_between(indices, [m + s for m, s in zip(matrice_moyennes_train, matrice_ecart_types_train)], [m - s for m, s in zip(matrice_moyennes_train, matrice_ecart_types_train)], alpha=0.2, linestyle='-', label='T_Écart_Type')  # Zone continue pour l'écart type
-plt.plot(indices, matrice_moyennes, linestyle='-', label='V_Moyenne')  # Ligne continue pour la moyenne
-plt.fill_between(indices, [m + s for m, s in zip(matrice_moyennes, matrice_ecart_types)], [m - s for m, s in zip(matrice_moyennes, matrice_ecart_types)], alpha=0.2, linestyle='-', label='V_Écart_Type')  # Zone continue pour l'écart type
-plt.xlabel('Nombre de générations')
-plt.ylabel('Moyenne / Écart Type')
-plt.title('Évolution de la moyenne et de l\'écart type par rapport au nombre de générations')
-plt.legend()
-plt.grid(True)
-
-# Générer un nom de fichier incrémental pour le graphique
-numero_fichier_graphique = 1
-nom_fichier_graphique = f'graphique_evolution_{numero_fichier_graphique}.png'
-while os.path.isfile(os.path.join("./Res", nom_fichier_graphique)):
-    numero_fichier_graphique += 1
-    nom_fichier_graphique = f'graphique_evolution_{numero_fichier_graphique}.png'
-
-# Sauvegarder le graphique dans un fichier image incrémental
-plt.savefig(os.path.join("./Res", nom_fichier_graphique))
-
-# Afficher le graphique
-plt.show()
+    # Passage des données localSearch extraites à la fonction de traçage
+    plot_data_evolution(indices, {'means': means_list, 'std_devs': std_devs_list}, localSearch_data,
+                        max_list, min_list, save_filename="mon_graphique.png")
