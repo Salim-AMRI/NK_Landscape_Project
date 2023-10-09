@@ -44,7 +44,7 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
         # Créez un nom de fichier de journal personnalisé en fonction des paramètres
         log_filename = f"logTrajectory_{strategy.toString()}_N_{N}_K_{K}_nb_instances_test_{num_instance}_nb_restarts_{num_restart}.log"
-        print(log_filename)
+
 
         log_file = os.path.join(log_directory, log_filename)
 
@@ -315,7 +315,7 @@ if __name__ == '__main__':
         print("Score moyen sur l'ensemble de validation : " + str(average_validation_score))
         print("best_tabuTime : " + str(best_tabuTime))
 
-        f = open(pathResult + nameResult + "_best_tabuTime_" + str(best_tabuTime), "a")
+        f = open(pathResult + nameResult , "a")
         f.write(str(best_tabuTime) + "," + str(average_training_score) + "," + str(average_validation_score) + "\n")
         f.close()
 
