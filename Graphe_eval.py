@@ -165,9 +165,9 @@ def plot_data_evolution(indices, data, localSearch_data, max_list, min_list, sav
     for i, (mean_localSearch, std_dev_localSearch) in enumerate(localSearch_data):
         # Utilisez la couleur correspondante à chaque mot-clé
         color = colors[i]
-        plt.axhline(y=mean_localSearch, color=color, linestyle='-', label=f'{localSearch_keywords[i]}_Moyenne')
+        plt.axhline(y=mean_localSearch, color='red', linestyle='-', label=f'{localSearch_keywords[i]}_Moyenne')
         plt.fill_between(indices, [mean_localSearch + std_dev_localSearch] * len(indices),
-                         [mean_localSearch - std_dev_localSearch] * len(indices), color=color, alpha=0.2,
+                         [mean_localSearch - std_dev_localSearch] * len(indices), color='red', alpha=0.2,
                          label=f'{localSearch_keywords[i]}_Écart_Type')
 
     plt.xlabel('Number of Generations')
@@ -190,9 +190,9 @@ def plot_data_evolution(indices, data, localSearch_data, max_list, min_list, sav
     plt.show()
 
 if __name__ == "__main__":
-    directory = './results'
-    keywords = ['InvariantNN_withTabu_128_K_8']
-    localSearch_keywords = ['tabu_128_K_8']
+    directory = './results_09102023'
+    keywords = ['strategyNN_10,5_N_128_K_8']
+    localSearch_keywords = ['hillClimber_10,5_N_128_K_8']
 
     # Mettez à jour la manière dont vous déballez les valeurs renvoyées par extract_and_process_data
     data_matrices, means_list, std_devs_list, max_list, min_list = extract_and_process_data(directory, keywords)
