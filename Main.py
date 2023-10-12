@@ -163,7 +163,8 @@ if __name__ == '__main__':
         for K in ListK:
             train_path_list.append("./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/")
     else:
-        train_path_list.append("./tmp/" + type_strategy + "_seed" + str(seed) + "/")
+        for K in ListK:
+            train_path_list.append("./tmp/" + type_strategy + "_seed" + str(seed) + "/")
 
     valid_path_list = []
 
@@ -186,7 +187,7 @@ if __name__ == '__main__':
         else:
             str_ += str(layer) + ","
 
-    if(len(ListK) > 1):
+    if(len(ListK) ==1):
         str_K = str(ListK[0])
     else:
         str_K = ""
@@ -274,10 +275,14 @@ if __name__ == '__main__':
                 for idx_run in range(nb_instances * nb_restarts):
                     list_strategy[idx_run].update_weights(solution)
 
-                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, train_path_list, nb_instances, idx_run) for idx_run
-                    in range(nb_instances * nb_restarts))
+                all_list_scores = []
+                for idx_K, K in enumerate(ListK):
+                    list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, train_path_list[idx_K], nb_instances, idx_run) for idx_run
+                        in range(nb_instances * nb_restarts))
+                    all_list_scores.extend(list_scores)
 
-                average_training_score = np.mean(list_scores)
+
+                average_training_score = np.mean(all_list_scores)
 
                 list_training_scores.append(average_training_score)
 
@@ -293,11 +298,16 @@ if __name__ == '__main__':
             list_strategy[0].update_weights(best_current_solution)
 
             # Évaluez la meilleure solution sur l'ensemble de validation
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, ListK, valid_path_list, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
 
-            average_validation_score = np.mean(list_scores)
+            all_list_scores = []
+            for idx_K, K in enumerate(ListK):
+                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path_list[idx_K], nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+                all_list_scores.extend(list_scores)
+                print("Score moyen sur l'ensemble de validation pour N " + str(N) + " K " + str(K) + " : " + str(np.mean(list_scores)))
 
-            print("Score moyen sur l'ensemble de validation : " + str(average_validation_score))
+            average_validation_score = np.mean(all_list_scores)
+
+            print("Score moyen global sur l'ensemble de validation : " + str(average_validation_score))
 
             f = open(pathResult + nameResult, "a")
             f.write(str(generation) + "," + str(max(list_training_scores)) + "," + str(average_validation_score) + "\n")
@@ -334,12 +344,13 @@ if __name__ == '__main__':
             # Évaluez les performances de chaque solution en parallèle
             list_training_scores = []
 
-
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, train_path_list, nb_instances, idx_run) for idx_run
+            all_list_scores = []
+            for idx_K, K in enumerate(ListK):
+                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, train_path_list[idx_K], nb_instances, idx_run) for idx_run
                     in range(nb_instances * nb_restarts))
+                all_list_scores.extend(list_scores)
 
-
-            average_training_score = np.mean(list_scores)
+            average_training_score = np.mean(all_list_scores)
             print("paramValue : " + str(paramValue) + " - average_training_score : " + str(average_training_score))
 
             if average_training_score > best_current_score:
@@ -355,11 +366,16 @@ if __name__ == '__main__':
             list_strategy = [OneLambdaDeterministic(N, best_paramValue) for idx_run in range(nb_instances * nb_restarts)]
 
         # Évaluez la meilleure solution sur l'ensemble de validation
-        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, ListK, valid_path_list, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+        all_list_scores = []
+        for idx_K, K in enumerate(ListK):
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path_list[idx_K], nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+            print("Score moyen sur l'ensemble de validation pour N " + str(N) + " K " + str(K) + " : " + str(
+                np.mean(list_scores)))
+            all_list_scores.extend(list_scores)
 
-        average_validation_score = np.mean(list_scores)
+        average_validation_score = np.mean(all_list_scores)
 
-        print("Score moyen sur l'ensemble de validation : " + str(average_validation_score))
+        print("Score global moyen sur l'ensemble de validation : " + str(average_validation_score))
         print("best paramValue : " + str(best_paramValue))
 
         f = open(pathResult + nameResult , "a")
@@ -390,10 +406,17 @@ if __name__ == '__main__':
         # elif (type_strategy == "iteratedHillClimber"):
         #     list_strategy = [IteratedHillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
 
-        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, valid_path_list, nb_instances, idx_run, alpha=alpha) for idx_run in
+        all_list_scores = []
+        for idx_K, K in enumerate(ListK):
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, valid_path_list[idx_K], nb_instances, idx_run, alpha=alpha) for idx_run in
             range(nb_instances * nb_restarts))
+            print("Score moyen sur l'ensemble de validation pour N " + str(N) + " K " + str(K) + " : " + str(
+                np.mean(list_scores)))
 
-        average_score_baseline = np.mean(list_scores)
+            all_list_scores.extend(list_scores)
+
+
+        average_score_baseline = np.mean(all_list_scores)
 
         print("Score moyen de la stratégie " + type_strategy + " sur l'ensemble de validation :")
         print(average_score_baseline)

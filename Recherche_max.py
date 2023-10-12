@@ -27,7 +27,11 @@ nb_instances = args.nb_instances
 nb_jobs = args.nb_jobs
 
 # Chemin du répertoire contenant les fichiers à consulter
-directory = 'results_09102023/'
+#directory = 'results_09102023/'
+
+
+result_directory = 'results'
+solution_directory = "solutions/"
 
 # Initialisation de la valeur maximale et du nom du fichier correspondant
 max_value = None
@@ -35,27 +39,47 @@ file_with_max_value = None
 
 results_dict = {}
 
-for N in [32, 64, 128]:
-    for K in [1, 2, 4, 8]:
 
-        list_starting_points = [np.random.randint(2, size=N) for i in range(nb_instances*nb_restarts)]
+f = open("images/results.txt", "w")
+f.write("Results test")
+f.close()
 
 
-        results_dict[f'N_{N}_K_{K}'] = {}
 
-        print("N : " + str(N) + " K : " + str(K))
+list_strategy_name = ["hillClimberJump", "hillClimberFirstImprovementJump", "oneLambdaDeterministic",
+                              "strategyNN"]
+#
+# for N in [32, 64, 128]:
+#     for K in [1, 2, 4, 8, 'all']:
 
-        for type_strategy in ["hillClimberJump", "hillClimberFirstImprovementJump", "oneLambdaDeterministic",
-                              "strategyNN"]:
+for N in [32]:
+    for K in ['all']:
 
-            list_list_strategy = []  # Réinitialiser la liste des résultats
+        if(K == 'all'):
+            list_starting_points = [np.random.randint(2, size=N) for i in range(nb_instances*nb_restarts)]
+            list_K = [1,2,4,8]
+            str_K = "1,2,4,8"
+        else:
+            list_starting_points = [np.random.randint(2, size=N) for i in range(nb_instances * nb_restarts*4)]
+            list_K = [K]
+            str_K = str(K)
+
+        results_dict[f'N_{N}_K_' + str_K] = {}
+
+        print("N : " + str(N) + " K : " + str_K)
+
+        list_all_strategy = []
+
+        for type_strategy in list_strategy_name:
+
+
 
             if("NN" in type_strategy):
                 # Parcours des fichiers dans le répertoire
-                for filename in os.listdir(directory):
+                for filename in os.listdir(result_directory):
 
-                    if filename.endswith('.txt') and 'test_strategy_' + type_strategy + '_10,5_N_' + str(N) + '_K_' + str(K) in filename:
-                        file_path = os.path.join(directory, filename)
+                    if filename.endswith('.txt') and 'test_strategy_' + type_strategy + '_10,5_N_' + str(N) + '_K_' + str_K in filename:
+                        file_path = os.path.join(result_directory, filename)
 
                         # Ouvre le fichier en mode lecture
                         with open(file_path, 'r') as file:
@@ -91,11 +115,12 @@ for N in [32, 64, 128]:
                 name = 'best_solution_' + file_with_max_value + '.csv'
 
 
-                path = "solutions_09102023/"
+                #path = "solutions_09102023/"
+
 
                 splitName = name.split("_")
 
-                solution = np.loadtxt(path + name)
+                solution = np.loadtxt(solution_directory + name)
 
 
                 hiddenLayer_str =  splitName[5]
@@ -125,10 +150,12 @@ for N in [32, 64, 128]:
 
                 lambda_ = None
                 max_value = None
-                result_directory = 'results_09102023/'
+
                 for filename in os.listdir(result_directory):
                     if filename.endswith('.txt') and 'test_strategy_' + type_strategy + '_10,5_N_' + str(
-                            N) + '_K_' + str(K) in filename:
+                            N) + '_K_' + str_K in filename:
+
+
                         file_path = os.path.join(result_directory, filename)
 
                         with open(file_path, 'r') as file:
@@ -144,40 +171,45 @@ for N in [32, 64, 128]:
                                             max_value = value  # Mettez à jour max_value ici
                                     except ValueError:
                                         pass
-                '''
+
                 if lambda_ is not None:
                     print(f"Lambda is set to: {lambda_}")
                 else:
                     print("No Lambda value found in the files.")
-                '''
-                list_strategy = [OneLambdaDeterministic(N, lambda_) for idx_run in range(nb_instances * nb_restarts)]
+
+                list_strategy = [OneLambdaDeterministic(N, int(lambda_)) for idx_run in range(nb_instances * nb_restarts)]
+
 
             if("NN" in type_strategy):
                     for idx_run in range(nb_instances * nb_restarts):
                         list_strategy[idx_run].update_weights(solution)
 
-            # Chemin vers le répertoire contenant les instances de test
-            path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/test/"
 
-            # Utilisez la bibliothèque joblib pour paralléliser l'évaluation sur les instances
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, path, nb_instances, idx_run, alpha=None, withLogs=True, starting_point = list_starting_points[idx_run]) for idx_run in range(nb_instances * nb_restarts))
+            list_all_scores = []
+            for K in list_K:
+                # Chemin vers le répertoire contenant les instances de test
+                path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/test/"
 
-            #print(list_scores)
+                # Utilisez la bibliothèque joblib pour paralléliser l'évaluation sur les instances
+                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, path, nb_instances, idx_run, alpha=None, withLogs=True, starting_point = list_starting_points[idx_run]) for idx_run in range(nb_instances * nb_restarts))
 
-            list_list_strategy.append(list_scores)
-            print(type_strategy + " : " + str(np.mean(list_scores)/ N))
+                print("Score moyen sur l'ensemble de test pour N " + str(N) + " K " + str(K) + " : " + str(np.mean(list_scores)/N))
 
-            # Calculer la moyenne des scores pour la stratégie actuelle
-            if len(list_list_strategy) > 0:
-                mean_score = np.mean(list_list_strategy) / N
-                results_dict[f'N_{N}_K_{K}'][type_strategy] = mean_score
+                list_all_scores.extend(list_scores)
+
+                #print(list_scores)
+
+            list_all_strategy.append(list_all_scores)
+            print(type_strategy + " : " + str(np.mean(list_all_scores)/ N))
+
 
         # Enregistrer les résultats dans un fichier texte
-        with open("images/results.txt", "w") as result_file:
-            for N_K, strategies in results_dict.items():
-                result_file.write(f"{N_K}:\n")
-                for strategy, mean_score in strategies.items():
-                    result_file.write(f"  {strategy}: {mean_score}\n")
+        with open("images/results.txt", "a") as result_file:
+
+            result_file.write("N " + str(N) + " K " + str(K) + ":\n")
+            for idx, strategy in enumerate(list_strategy_name):
+                mean_score = np.mean(list_all_strategy[idx])/ N
+                result_file.write(f"  {strategy}: {mean_score}\n")
 
         '''
         print("shapiro")
