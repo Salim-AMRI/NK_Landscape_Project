@@ -30,8 +30,8 @@ nb_jobs = args.nb_jobs
 #directory = 'results_09102023/'
 
 
-result_directory = 'results'
-solution_directory = "solutions/"
+result_directory = 'results_09102023'
+solution_directory = "solutions_09102023/"
 
 # Initialisation de la valeur maximale et du nom du fichier correspondant
 max_value = None
@@ -49,11 +49,8 @@ f.close()
 list_strategy_name = ["hillClimberJump", "hillClimberFirstImprovementJump", "oneLambdaDeterministic",
                               "strategyNN"]
 #
-# for N in [32, 64, 128]:
-#     for K in [1, 2, 4, 8, 'all']:
-
-for N in [32]:
-    for K in ['all']:
+for N in [32, 64, 128]:
+    for K in [1, 2, 4, 8]:
 
         if(K == 'all'):
             list_starting_points = [np.random.randint(2, size=N) for i in range(nb_instances*nb_restarts)]
