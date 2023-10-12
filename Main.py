@@ -14,21 +14,18 @@ import logging
 
 from Env_nk_landscape import EnvNKlandscape
 from Instances_Generator import Nk_generator
-import torch.nn.functional as F
-
 
 # Création du parser d'arguments
 from strategies.HillClimber import HillClimber
-from strategies.HillClimberSoftmax import HillClimberSoftmax
+from strategies.HillClimberFirstImprovementJump import HillClimberFirstImprovementJump
+from strategies.HillClimberJump import HillClimberJump
 from strategies.IteratedHillClimber import IteratedHillClimber
+from strategies.OneLambdaDeterministic import OneLambdaDeterministic
 from strategies.StrategyNN import StrategyNN
-from strategies.StrategyNNTabu import StrategyNNTabu
-from strategies.StrategyNNHistoryTabu import StrategyNNHistoryTabu
 from strategies.strategyNNLastMoveIndicatorTabu import StrategyNNLastMoveIndicatorTabu
 from strategies.Tabu import Tabu
 
 def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False):
-
 
     # Déterminez le numéro d'instance et de redémarrage
     num_instance = idx_run % nb_intances
@@ -69,15 +66,10 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
         action_id = strategy.choose_action(env)
 
-        if action_id >= 0:
-            state, deltaScore, terminated = env.step(action_id)
-            current_score += deltaScore
 
-        # action de réaliser une perturbation
-        elif action_id == -1:
+        state, deltaScore, terminated = env.step(action_id)
+        current_score += deltaScore
 
-            env.perturbation(alpha)
-            current_score = env.score()
 
         strategy.updateInfo(action_id, env.turn)
 
@@ -199,6 +191,12 @@ if __name__ == '__main__':
         if(type_strategy == "strategyNN"):
             list_strategy = [StrategyNN(N, hiddenlayer_size ) for idx_run in range(nb_instances * nb_restarts)]
 
+        # if(type_strategy == "strategyNNSoftmax"):
+        #     list_strategy = [StrategyNNSoftmax(N, hiddenlayer_size, True, True ) for idx_run in range(nb_instances * nb_restarts)]
+
+        # elif(type_strategy == "strategyNNnoAverageInteraction"):
+        #     list_strategy = [StrategyNN(N, hiddenlayer_size, False ) for idx_run in range(nb_instances * nb_restarts)]
+
         # elif(type_strategy == "strategyNN_Tabu"):
         #     tabuTime = 3 + int(0.1 * N)
         #     list_strategy = [StrategyNN_Tabu(N, hiddenlayer_size, tabuTime) for idx_run in range(nb_instances * nb_restarts)]
@@ -277,7 +275,8 @@ if __name__ == '__main__':
 
 
 
-    elif(type_strategy == "tabu"):
+    elif(type_strategy == "tabu" or type_strategy == "iteratedHillClimber" or type_strategy == "oneLambdaDeterministic"):
+
 
         best_current_score = float("-inf")
 
@@ -287,9 +286,15 @@ if __name__ == '__main__':
             Nk_generator(N, K, nb_instances, train_path)
             print("end instances generation")
 
-        for tabuTime in range(N):
+        for paramValue in range(1,N):
 
-            list_strategy = [Tabu(N, tabuTime) for idx_run in range(nb_instances * nb_restarts)]
+            if(type_strategy == "tabu"):
+                list_strategy = [Tabu(N, paramValue) for idx_run in range(nb_instances * nb_restarts)]
+            elif(type_strategy == "iteratedHillClimber"):
+                list_strategy = [IteratedHillClimber(N, paramValue) for idx_run in range(nb_instances * nb_restarts)]
+            elif(type_strategy == "oneLambdaDeterministic"):
+                list_strategy = [OneLambdaDeterministic(N, paramValue) for idx_run in range(nb_instances * nb_restarts)]
+
 
             # Évaluez les performances de chaque solution en parallèle
             list_training_scores = []
@@ -300,25 +305,31 @@ if __name__ == '__main__':
 
 
             average_training_score = np.mean(list_scores)
-            print("tabuTime : " + str(tabuTime) + " - average_training_score : " + str(average_training_score))
+            print("paramValue : " + str(paramValue) + " - average_training_score : " + str(average_training_score))
 
             if average_training_score > best_current_score:
                 best_current_score = average_training_score
-                best_tabuTime = tabuTime
+                best_paramValue = paramValue
 
-        list_strategy = [Tabu(N, best_tabuTime) for idx_run in range(nb_instances * nb_restarts)]
+
+        if(type_strategy == "tabu"):
+            list_strategy = [Tabu(N, best_paramValue) for idx_run in range(nb_instances * nb_restarts)]
+        elif(type_strategy == "iteratedHillClimber"):
+            list_strategy = [IteratedHillClimber(N, best_paramValue) for idx_run in range(nb_instances * nb_restarts)]
+        elif(type_strategy == "oneLambdaDeterministic"):
+            list_strategy = [OneLambdaDeterministic(N, best_paramValue) for idx_run in range(nb_instances * nb_restarts)]
+
         # Évaluez la meilleure solution sur l'ensemble de validation
         list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
 
         average_validation_score = np.mean(list_scores)
 
         print("Score moyen sur l'ensemble de validation : " + str(average_validation_score))
-        print("best_tabuTime : " + str(best_tabuTime))
+        print("best paramValue : " + str(best_paramValue))
 
         f = open(pathResult + nameResult , "a")
-        f.write(str(best_tabuTime) + "," + str(average_training_score) + "," + str(average_validation_score) + "\n")
+        f.write(str(best_paramValue) + "," + str(average_training_score) + "," + str(average_validation_score) + "\n")
         f.close()
-
 
 
     else:
@@ -326,10 +337,16 @@ if __name__ == '__main__':
 
         print("Évaluation de la stratégie " + type_strategy)
 
-        # if(type_strategy == "hillClimber"):
-        list_strategy = [HillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
-        # elif(type_strategy == "hillClimberSoftmax"):
-        #     list_strategy = [HillClimberSoftmax(N) for idx_run in range(nb_instances * nb_restarts)]
+        if(type_strategy == "hillClimber"):
+            list_strategy = [HillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
+
+        if(type_strategy == "hillClimberJump"):
+            list_strategy = [HillClimberJump(N) for idx_run in range(nb_instances * nb_restarts)]
+
+        if(type_strategy == "hillClimberFirstImprovementJump"):
+            list_strategy = [HillClimberFirstImprovementJump(N) for idx_run in range(nb_instances * nb_restarts)]
+
+
         # elif (type_strategy == "iteratedHillClimber"):
         #     list_strategy = [IteratedHillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
 

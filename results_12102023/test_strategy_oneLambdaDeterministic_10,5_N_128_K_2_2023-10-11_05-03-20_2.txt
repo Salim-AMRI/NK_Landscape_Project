@@ -1,0 +1,2 @@
+generation,avg_training_score,avg_validation_score
+84,90.85996105999999,91.03741781000001

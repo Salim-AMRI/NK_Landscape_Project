@@ -16,6 +16,16 @@ class Strategy:
         return self.neighDeltaFitness
 
 
+    def hashFunction(self, array):
+
+        str_ = ""
+
+        for i in range(array.shape[0]):
+
+            str_ += str(array[i])
+
+        return hash(str_)%self.N, hash(str_ + "1") %self.N
+
     def choose_action(self, env):
         pass
 

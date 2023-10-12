@@ -6,7 +6,7 @@ from strategies.Neural_net import Net, InvariantNNet
 
 class StrategyNN(Strategy):
 
-    def __init__(self, N, hidden_layers_size, dimInput = 1, dimOutput = 1):
+    def __init__(self, N, hidden_layers_size, remix=True, rescale=False, dimInput = 1, dimOutput = 1):
 
         Strategy.__init__(self,N)
 
@@ -18,7 +18,7 @@ class StrategyNN(Strategy):
 
         self.layers_size.append(dimOutput)
 
-        self.nnet = InvariantNNet(N, True, False, self.layers_size)
+        self.nnet = InvariantNNet(N, remix, rescale, self.layers_size)
 
         self.params_net = list(self.nnet.parameters())
 

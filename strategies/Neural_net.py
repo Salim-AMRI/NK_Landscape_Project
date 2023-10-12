@@ -56,9 +56,13 @@ def InvariantModule(module_class, N, remix, rescale):
                     ) / (N + 1)
 
                 else:
+
                     return self._ind_module(*inputs)  + self._mean_module(*red_inputs)
 
-            return self._ind_module(*inputs)
+            else:
+
+                print("no remix")
+                return self._ind_module(*inputs)
 
         def reset_parameters(self):
             self._ind_module.reset_parameters()
