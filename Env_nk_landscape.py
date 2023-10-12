@@ -33,6 +33,10 @@ class EnvNKlandscape:
         self.turn = 0
         return self.game_state
 
+    def setState(self, state):
+
+        self.game_state = state
+
     def perturbation(self, alpha):
 
         num_bits_to_perturb = int(alpha * self.N)  # Calcul du nombre de bits à perturber

@@ -1,17 +1,16 @@
 import numpy as np
 from joblib import Parallel, delayed
 import argparse
-
 from Main import get_Score_trajectory
-from strategies.HillClimber import HillClimber
+from strategies.HillClimberJump import HillClimberJump
+from strategies.OneLambdaDeterministic import OneLambdaDeterministic
 from strategies.StrategyNN import StrategyNN
-from strategies.strategyNNLastMoveIndicatorTabu import StrategyNNLastMoveIndicatorTabu
-from strategies.Tabu import Tabu
+from strategies.HillClimberFirstImprovementJump import HillClimberFirstImprovementJump
 import os
 from scipy import stats
-
 from scipy.stats import shapiro
 
+from strategies.Tabu import Tabu
 
 parser = argparse.ArgumentParser(description='Optimisation de poids de réseau de neurones avec CMA-ES')
 
@@ -34,13 +33,22 @@ directory = 'results_09102023/'
 max_value = None
 file_with_max_value = None
 
+results_dict = {}
+
 for N in [32, 64, 128]:
     for K in [1, 2, 4, 8]:
 
-        print("N : " + str(N) + " K : " + str(K))
-        list_list_strategy = []
+        list_starting_points = [np.random.randint(2, size=N) for i in range(nb_instances*nb_restarts)]
 
-        for type_strategy in ["hillClimber", "strategyNN"]:
+
+        results_dict[f'N_{N}_K_{K}'] = {}
+
+        print("N : " + str(N) + " K : " + str(K))
+
+        for type_strategy in ["hillClimberJump", "hillClimberFirstImprovementJump", "oneLambdaDeterministic",
+                              "strategyNN"]:
+
+            list_list_strategy = []  # Réinitialiser la liste des résultats
 
             if("NN" in type_strategy):
                 # Parcours des fichiers dans le répertoire
@@ -72,12 +80,13 @@ for N in [32, 64, 128]:
                                         # En cas d'erreur de conversion, ignore cette ligne
                                         pass
 
+                '''
                 # Affiche le nom du fichier avec la valeur maximale et la valeur maximale
                 if max_value is not None:
                     print(f"Le fichier '{file_with_max_value}' contient la valeur maximale : {max_value}")
                 else:
                     print("Aucune valeur maximale trouvée dans les fichiers.")
-
+                '''
 
                 name = 'best_solution_' + file_with_max_value + '.csv'
 
@@ -98,8 +107,6 @@ for N in [32, 64, 128]:
                 for layer in split_hiddenLayer_str:
                     hiddenlayer_size.append(int(layer))
 
-
-
                 # Chargez les paramètres de la solution optimale à partir du fichier CSV
 
             if (nb_jobs == -1):
@@ -108,47 +115,42 @@ for N in [32, 64, 128]:
             if (type_strategy == "strategyNN"):
                 list_strategy = [StrategyNN(N, hiddenlayer_size) for idx_run in range(nb_instances * nb_restarts)]
 
-            elif (type_strategy == "strategyNNLastMoveIndicatorTabu"):
-                list_strategy = [StrategyNNLastMoveIndicatorTabu(N, hiddenlayer_size) for idx_run in
-                                 range(nb_instances * nb_restarts)]
+            elif(type_strategy == "hillClimberJump"):
+                list_strategy = [HillClimberJump(N) for idx_run in range(nb_instances * nb_restarts)]
 
-            elif(type_strategy == "hillClimber"):
-                list_strategy = [HillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
+            elif (type_strategy == "hillClimberFirstImprovementJump"):
+                list_strategy = [HillClimberFirstImprovementJump(N) for idx_run in range(nb_instances * nb_restarts)]
 
-            elif type_strategy == "tabu":
-                # Initialize Tabu_Time to None
-                Tabu_Time = None
+            elif type_strategy == "oneLambdaDeterministic":
+
+                lambda_ = None
                 max_value = None
-
-                # Define the directory where result files are located
                 result_directory = 'results_09102023/'
-
                 for filename in os.listdir(result_directory):
-                    if filename.endswith('.txt') and 'test_strategy_' + type_strategy + '_10,5N_' + str(N) + '_K_' + str(K) in filename:
+                    if filename.endswith('.txt') and 'test_strategy_' + type_strategy + '_10,5_N_' + str(
+                            N) + '_K_' + str(K) in filename:
                         file_path = os.path.join(result_directory, filename)
 
                         with open(file_path, 'r') as file:
-                            lines = file.readlines()
 
+                            lines = file.readlines()
                             for line in lines:
                                 elements = line.strip().split(',')
                                 if len(elements) >= 3:
                                     try:
                                         value = float(elements[2])
-
-                                        if Tabu_Time is None or value > max_value:
-                                         Tabu_Time = int(elements[0].split(',')[0])
-                                         max_value = value
-
+                                        if max_value is None or value > max_value:
+                                            lambda_ = int(elements[0].split(',')[0])
+                                            max_value = value  # Mettez à jour max_value ici
                                     except ValueError:
                                         pass
-
-                if Tabu_Time is not None:
-                    print(f"Tabu_Time is set to: {Tabu_Time}")
+                '''
+                if lambda_ is not None:
+                    print(f"Lambda is set to: {lambda_}")
                 else:
-                    print("No Tabu_Time value found in the files.")
-
-                list_strategy = [Tabu(N, Tabu_Time) for idx_run in range(nb_instances * nb_restarts)]
+                    print("No Lambda value found in the files.")
+                '''
+                list_strategy = [OneLambdaDeterministic(N, lambda_) for idx_run in range(nb_instances * nb_restarts)]
 
             if("NN" in type_strategy):
                     for idx_run in range(nb_instances * nb_restarts):
@@ -158,42 +160,32 @@ for N in [32, 64, 128]:
             path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/test/"
 
             # Utilisez la bibliothèque joblib pour paralléliser l'évaluation sur les instances
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, path, nb_instances, idx_run, alpha=None, withLogs=True) for idx_run in range(nb_instances * nb_restarts))
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, path, nb_instances, idx_run, alpha=None, withLogs=True, starting_point = list_starting_points[idx_run]) for idx_run in range(nb_instances * nb_restarts))
 
             #print(list_scores)
 
             list_list_strategy.append(list_scores)
             print(type_strategy + " : " + str(np.mean(list_scores)/ N))
 
+            # Calculer la moyenne des scores pour la stratégie actuelle
+            if len(list_list_strategy) > 0:
+                mean_score = np.mean(list_list_strategy) / N
+                results_dict[f'N_{N}_K_{K}'][type_strategy] = mean_score
+
+        # Enregistrer les résultats dans un fichier texte
+        with open("images/results.txt", "w") as result_file:
+            for N_K, strategies in results_dict.items():
+                result_file.write(f"{N_K}:\n")
+                for strategy, mean_score in strategies.items():
+                    result_file.write(f"  {strategy}: {mean_score}\n")
+
+        '''
         print("shapiro")
         print(shapiro(list_list_strategy[0]))
         print(shapiro(list_list_strategy[1]))
+        print(shapiro(list_list_strategy[2]))
+        print(shapiro(list_list_strategy[3]))
 
-        print(stats.ttest_ind(list_list_strategy[0], list_list_strategy[1]))
+        print(stats.ttest_ind(list_list_strategy[0], list_list_strategy[1], list_list_strategy[2], list_list_strategy[3]))
         #print(stats.ttest_ind(list_list_strategy[2], list_list_strategy[3]))
-
-'''
-# Créez un tableau LaTeX avec les valeurs
-latex_table = "\\begin{tabular}{|c|c|c|}\n"
-latex_table += "\\hline\n"
-latex_table += "Instance & Type de Stratégie & Moyenne des Scores \\\\\n"
-latex_table += "\\hline\n"
-
-for N in [32, 64, 128]:
-    for K in [1, 2, 4, 8]:
-        for i, type_strategy in enumerate(["hillClimber", "strategyNN", "strategyNNLastMoveIndicatorTabu", "tabu"]):
-            instance_name = f"N_{N}_K_{K}"
-            latex_table += f"{instance_name} & {type_strategy} & {np.mean(list_list_strategy[i]):.2f} \\\\\n"
-            latex_table += "\\hline\n"
-
-latex_table += "\\end{tabular}"
-
-# Définissez le chemin du fichier LaTeX de sortie
-output_tex_file = "tableau_resultats.tex"
-
-# Écrivez le contenu LaTeX dans le fichier
-with open(output_tex_file, "w") as tex_file:
-    tex_file.write(latex_table)
-
-print(f"Tableau des résultats LaTeX écrit dans {output_tex_file}")
-'''
+        '''

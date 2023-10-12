@@ -26,7 +26,7 @@ from strategies.StrategyNN import StrategyNN
 from strategies.strategyNNLastMoveIndicatorTabu import StrategyNNLastMoveIndicatorTabu
 from strategies.Tabu import Tabu
 
-def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False):
+def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False, starting_point = None):
 
     # Déterminez le numéro d'instance et de redémarrage
     num_instance = idx_run % nb_intances
@@ -61,7 +61,13 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
     #print("launch instance " + name_instance)
     env = EnvNKlandscape(name_instance, 2*N)
-    env.reset()
+
+    if(starting_point is None):
+        env.reset()
+    else:
+        env.setState(starting_point)
+
+
     terminated = False
     current_score = env.score()
     bestScore = current_score
