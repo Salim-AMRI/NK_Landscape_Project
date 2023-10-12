@@ -9,11 +9,15 @@ from strategies.strategyNNLastMoveIndicatorTabu import StrategyNNLastMoveIndicat
 from strategies.Tabu import Tabu
 import os
 from scipy import stats
+
+from scipy.stats import shapiro
+
+
 parser = argparse.ArgumentParser(description='Optimisation de poids de réseau de neurones avec CMA-ES')
 
-parser.add_argument('--nb_restarts', type=int, default=5, help='Nombre de redémarrages')
-parser.add_argument('--nb_instances', type=int, default=10, help='Nombre d\'instances')
-parser.add_argument('--nb_jobs', type=int, default=-1, help='Nombre de jobs')
+parser.add_argument('--nb_restarts', type=int, default=1, help='Nombre de redémarrages')
+parser.add_argument('--nb_instances', type=int, default=100, help='Nombre d\'instances')
+parser.add_argument('--nb_jobs', type=int, default=20, help='Nombre de jobs')
 
 args = parser.parse_args()
 
@@ -33,9 +37,10 @@ file_with_max_value = None
 for N in [32, 64, 128]:
     for K in [1, 2, 4, 8]:
 
+        print("N : " + str(N) + " K : " + str(K))
         list_list_strategy = []
 
-        for type_strategy in ["hillClimber", "strategyNN", "Tabu", "strategyNNLastMoveIndicatorTabu"]:
+        for type_strategy in ["hillClimber", "strategyNN"]:
 
             if("NN" in type_strategy):
                 # Parcours des fichiers dans le répertoire
@@ -83,19 +88,17 @@ for N in [32, 64, 128]:
 
                 solution = np.loadtxt(path + name)
 
-                print(splitName)
+
                 hiddenLayer_str =  splitName[5]
 
                 hiddenlayer_size = []
                 split_hiddenLayer_str = hiddenLayer_str.split(",")
 
-                print(split_hiddenLayer_str)
 
                 for layer in split_hiddenLayer_str:
                     hiddenlayer_size.append(int(layer))
 
-                print("hiddenlayer_size")
-                print(hiddenlayer_size)
+
 
                 # Chargez les paramètres de la solution optimale à partir du fichier CSV
 
@@ -157,13 +160,18 @@ for N in [32, 64, 128]:
             # Utilisez la bibliothèque joblib pour paralléliser l'évaluation sur les instances
             list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, path, nb_instances, idx_run, alpha=None, withLogs=True) for idx_run in range(nb_instances * nb_restarts))
 
+            #print(list_scores)
 
             list_list_strategy.append(list_scores)
-            print(type_strategy + " : " + str(np.mean(list_scores)/ + N))
+            print(type_strategy + " : " + str(np.mean(list_scores)/ N))
 
+        print("shapiro")
+        print(shapiro(list_list_strategy[0]))
+        print(shapiro(list_list_strategy[1]))
 
         print(stats.ttest_ind(list_list_strategy[0], list_list_strategy[1]))
-        print(stats.ttest_ind(list_list_strategy[2], list_list_strategy[3]))
+        #print(stats.ttest_ind(list_list_strategy[2], list_list_strategy[3]))
+
 '''
 # Créez un tableau LaTeX avec les valeurs
 latex_table = "\\begin{tabular}{|c|c|c|}\n"
