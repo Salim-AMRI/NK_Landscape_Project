@@ -8,7 +8,7 @@ import os
 from joblib import Parallel, delayed
 #from tqdm import tqdm
 import random
-import logging
+
 
 # Importation de modules personnalisés
 
@@ -16,6 +16,7 @@ from Env_nk_landscape import EnvNKlandscape
 from Instances_Generator import Nk_generator
 
 # Création du parser d'arguments
+from strategies.EmergingDeterministicStrategyK8 import EmergingDeterministicStrategyK8
 from strategies.HillClimber import HillClimber
 from strategies.HillClimberFirstImprovementJump import HillClimberFirstImprovementJump
 from strategies.HillClimberJump import HillClimberJump
@@ -39,14 +40,19 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
         if not os.path.exists(log_directory):
             os.makedirs(log_directory)
 
+
+
+
         # Créez un nom de fichier de journal personnalisé en fonction des paramètres
         log_filename = f"logTrajectory_{strategy.toString()}_N_{N}_K_{K}_nb_instances_test_{num_instance}_nb_restarts_{num_restart}.log"
 
 
         log_file = os.path.join(log_directory, log_filename)
 
-        # Configurez la journalisation pour écrire les fichiers de journalisation dans le répertoire spécifié
-        logging.basicConfig(filename=log_file, level=logging.INFO)
+        file_trajectory = open(log_file, "w")
+
+
+
 
 
     name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(num_instance) + ".txt"
@@ -87,9 +93,11 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
             # Ajoutez cet appel pour enregistrer le score, l'action_id et sa contribution dans le fichier journal à chaque itération
             if withLogs:
-                logging.info(
-                    f"Turn: {env.turn}, Current Score: {current_score}, Action_id: {action_id}, Action Contribution: {deltaScore}, Positive Actions: {positive_count}, Actions Above Chosen: {actions_above_count}")
+                file_trajectory.write(f"Turn: {env.turn}, Current Score: {current_score}, Action_id: {action_id}, Action Contribution: {deltaScore}, Positive Actions: {positive_count}, Actions Above Chosen: {actions_above_count}, \n")
 
+
+    if(withLogs):
+        file_trajectory.close()
 
     return bestScore
 
@@ -104,7 +112,7 @@ if __name__ == '__main__':
     # Ajout des arguments
     parser.add_argument('type_strategy', type=str, help='type_strategy')
     parser.add_argument('N', type=int, help='Taille de l\'instance')
-    parser.add_argument('K', type=int, help='Paramètre K')
+    parser.add_argument('ListK', type=int, nargs='+', help='Paramètres K')
     parser.add_argument('--hiddenlayer_size', nargs='+', type=int, default=[10,5], help='Hidden layer sizes')
     parser.add_argument('--nb_restarts', type=int, default=5, help='Nombre de redémarrages')
     parser.add_argument('--nb_instances', type=int, default=10, help='Nombre d\'instances')
@@ -121,7 +129,9 @@ if __name__ == '__main__':
 
     # Paramètres initiaux en fonction des arguments
     N = args.N
-    K = args.K
+    ListK = args.ListK
+
+
     seed = args.seed
     alpha = args.alpha
     sigma_init = args.sigma_init
@@ -132,8 +142,6 @@ if __name__ == '__main__':
     nb_jobs = args.nb_jobs
     hiddenlayer_size = args.hiddenlayer_size
 
-    print(" test hiddenlayer_size")
-    print(hiddenlayer_size)
 
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -142,14 +150,21 @@ if __name__ == '__main__':
     if(nb_jobs == -1):
         nb_jobs = nb_instances*nb_restarts
 
-
+    train_path_list = []
 
     if(args.use_trainset):
-        train_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/"
-    else:
-        train_path = "./tmp/" + type_strategy + "_seed" + str(seed) + "/"
 
-    valid_path = "./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/"
+        for K in ListK:
+            train_path_list.append("./benchmark/N_" + str(N) + "_K_" + str(K) + "/train/")
+    else:
+        train_path_list.append("./tmp/" + type_strategy + "_seed" + str(seed) + "/")
+
+    valid_path_list = []
+
+    for K in ListK:
+        valid_path_list.append("./benchmark/N_" + str(N) + "_K_" + str(K) + "/validation/")
+
+
     pathResult = "results/"
 
 
@@ -165,9 +180,20 @@ if __name__ == '__main__':
         else:
             str_ += str(layer) + ","
 
+    if(len(ListK) > 1):
+        str_K = str(ListK[0])
+    else:
+        str_K = ""
+        for idx, K in enumerate(ListK):
+            if (idx == len(ListK) - 1):
+                str_K += str(K)
+            else:
+                str_K += str(K) + ","
+
+
 
     # Utilisez datetime.datetime.now() pour obtenir la date actuelle
-    nameResult = "test_strategy_" + type_strategy + "_" + str_ + "_N_" + str(N) + "_K_" + str(K) + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
+    nameResult = "test_strategy_" + type_strategy + "_" + str_ + "_N_" + str(N) + "_K_" + str_K + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(seed) + ".txt"
 
     print(nameResult)
 
@@ -223,7 +249,9 @@ if __name__ == '__main__':
             if(args.use_trainset == False):
                 print("start instances generation")
                 # Générer de nouvelles instances de formation à chaque itération
-                Nk_generator(N, K, nb_instances, train_path)
+                for K in ListK:
+                    Nk_generator(N, K, nb_instances, train_path_list[0])
+
                 print("end instances generation")
 
             solutions = es.ask()  # Échantillonnez de nouveaux vecteurs de poids
@@ -240,7 +268,7 @@ if __name__ == '__main__':
                 for idx_run in range(nb_instances * nb_restarts):
                     list_strategy[idx_run].update_weights(solution)
 
-                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, train_path, nb_instances, idx_run) for idx_run
+                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, train_path_list, nb_instances, idx_run) for idx_run
                     in range(nb_instances * nb_restarts))
 
                 average_training_score = np.mean(list_scores)
@@ -259,7 +287,7 @@ if __name__ == '__main__':
             list_strategy[0].update_weights(best_current_solution)
 
             # Évaluez la meilleure solution sur l'ensemble de validation
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, ListK, valid_path_list, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
 
             average_validation_score = np.mean(list_scores)
 
@@ -283,7 +311,8 @@ if __name__ == '__main__':
         if (args.use_trainset == False):
             print("start instances generation")
             # Générer de nouvelles instances de formation à chaque itération
-            Nk_generator(N, K, nb_instances, train_path)
+            for K in ListK:
+                Nk_generator(N, K, nb_instances, train_path_list[0])
             print("end instances generation")
 
         for paramValue in range(1,N):
@@ -300,7 +329,7 @@ if __name__ == '__main__':
             list_training_scores = []
 
 
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, train_path, nb_instances, idx_run) for idx_run
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, train_path_list, nb_instances, idx_run) for idx_run
                     in range(nb_instances * nb_restarts))
 
 
@@ -320,7 +349,7 @@ if __name__ == '__main__':
             list_strategy = [OneLambdaDeterministic(N, best_paramValue) for idx_run in range(nb_instances * nb_restarts)]
 
         # Évaluez la meilleure solution sur l'ensemble de validation
-        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, ListK, valid_path_list, nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
 
         average_validation_score = np.mean(list_scores)
 
@@ -346,11 +375,16 @@ if __name__ == '__main__':
         if(type_strategy == "hillClimberFirstImprovementJump"):
             list_strategy = [HillClimberFirstImprovementJump(N) for idx_run in range(nb_instances * nb_restarts)]
 
+        if(type_strategy == "emergingDeterministicStrategy"):
+            list_strategy = [EmergingDeterministicStrategyK8(N) for idx_run in range(nb_instances * nb_restarts)]
+
+
+
 
         # elif (type_strategy == "iteratedHillClimber"):
         #     list_strategy = [IteratedHillClimber(N) for idx_run in range(nb_instances * nb_restarts)]
 
-        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, valid_path, nb_instances, idx_run, alpha=alpha) for idx_run in
+        list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, ListK, valid_path_list, nb_instances, idx_run, alpha=alpha) for idx_run in
             range(nb_instances * nb_restarts))
 
         average_score_baseline = np.mean(list_scores)
