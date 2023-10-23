@@ -1,0 +1,5 @@
+N 32 K 1:
+  hillClimberJump: 0.6967674134374999
+  hillClimberFirstImprovementJump: 0.6913620431250002
+  oneLambdaDeterministic: 0.6949645468749999
+  strategyNN: 0.6967163378125

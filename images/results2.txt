@@ -1,0 +1,61 @@
+N 32 K 1:
+  hillClimberJump: 0.6988461662499997
+  hillClimberFirstImprovementJump: 0.6929225500000001
+  oneLambdaDeterministic: 0.6943860784374999
+  strategyNN: 0.7004786971874998
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.19219582029052829ttest oneLambdaDeterministic - hillClimberJump : p-value 0.33529021922058844ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.7560892795415172ttest strategyNN - hillClimberJump : p-value 0.7129298277229245ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.09629136205153899ttest strategyNN - oneLambdaDeterministic : p-value 0.18809330589526416N 32 K 2:
+  hillClimberJump: 0.7161122562500001
+  hillClimberFirstImprovementJump: 0.7127986734374998
+  oneLambdaDeterministic: 0.7108985621875
+  strategyNN: 0.7170288237500002
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.4628934173631474ttest oneLambdaDeterministic - hillClimberJump : p-value 0.2680047145775246ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.6823489546949932ttest strategyNN - hillClimberJump : p-value 0.8395548013705165ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.3441784716473102ttest strategyNN - oneLambdaDeterministic : p-value 0.1890615646345273N 32 K 4:
+  hillClimberJump: 0.720534844375
+  hillClimberFirstImprovementJump: 0.7208684750000001
+  oneLambdaDeterministic: 0.7153410971875002
+  strategyNN: 0.7371919265625
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.93331711422072ttest oneLambdaDeterministic - hillClimberJump : p-value 0.19308208697623996ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.19492760196516826ttest strategyNN - hillClimberJump : p-value 2.85452987023982e-05ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.000123039453636857ttest strategyNN - oneLambdaDeterministic : p-value 3.891162719909114e-07N 32 K 8:
+  hillClimberJump: 0.704581170625
+  hillClimberFirstImprovementJump: 0.7145312246875001
+  oneLambdaDeterministic: 0.7029554756249999
+  strategyNN: 0.7343229659374999
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.015398436903092018ttest oneLambdaDeterministic - hillClimberJump : p-value 0.706260347954528ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.0052985989454966236ttest strategyNN - hillClimberJump : p-value 3.5525607344353457e-13ttest strategyNN - hillClimberFirstImprovementJump : p-value 1.0559176563128025e-07ttest strategyNN - oneLambdaDeterministic : p-value 4.2244945280822856e-14N 64 K 1:
+  hillClimberJump: 0.7017189253124999
+  hillClimberFirstImprovementJump: 0.695569618125
+  oneLambdaDeterministic: 0.6987601371875001
+  strategyNN: 0.7022365809374999
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.09693846321238822ttest oneLambdaDeterministic - hillClimberJump : p-value 0.44899236020588273ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.40975406232058154ttest strategyNN - hillClimberJump : p-value 0.8895478331477413ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.07176279352258458ttest strategyNN - oneLambdaDeterministic : p-value 0.373335076651921N 64 K 2:
+  hillClimberJump: 0.71391414375
+  hillClimberFirstImprovementJump: 0.7069031784375001
+  oneLambdaDeterministic: 0.7089807920312501
+  strategyNN: 0.714297568125
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.04940767942597028ttest oneLambdaDeterministic - hillClimberJump : p-value 0.1704056478737516ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.5716086663021742ttest strategyNN - hillClimberJump : p-value 0.9107057605614038ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.035859589335879606ttest strategyNN - oneLambdaDeterministic : p-value 0.1346820934422911N 64 K 4:
+  hillClimberJump: 0.72261681796875
+  hillClimberFirstImprovementJump: 0.7257397701562502
+  oneLambdaDeterministic: 0.7156327764062499
+  strategyNN: 0.73395281296875
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.28273240243104425ttest oneLambdaDeterministic - hillClimberJump : p-value 0.03615629020850358ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.0023266906922674597ttest strategyNN - hillClimberJump : p-value 0.00011367960667664677ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.00423932871009316ttest strategyNN - oneLambdaDeterministic : p-value 6.308975002698366e-08N 64 K 8:
+  hillClimberJump: 0.7078643520312501
+  hillClimberFirstImprovementJump: 0.7154083134375004
+  oneLambdaDeterministic: 0.7010939067187502
+  strategyNN: 0.7363428671875002
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.014679901501600912ttest oneLambdaDeterministic - hillClimberJump : p-value 0.04664853664636079ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 6.296946446803433e-05ttest strategyNN - hillClimberJump : p-value 1.0307247531520607e-20ttest strategyNN - hillClimberFirstImprovementJump : p-value 6.5683697278557155e-12ttest strategyNN - oneLambdaDeterministic : p-value 2.7088467016315945e-22N 128 K 1:
+  hillClimberJump: 0.6987067051562499
+  hillClimberFirstImprovementJump: 0.6925315407031253
+  oneLambdaDeterministic: 0.6966640191406248
+  strategyNN: 0.69903839390625
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.010341346410136315ttest oneLambdaDeterministic - hillClimberJump : p-value 0.38386628401004996ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.09121168580717398ttest strategyNN - hillClimberJump : p-value 0.884674919474112ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.006830819175642433ttest strategyNN - oneLambdaDeterministic : p-value 0.3105700859960609N 128 K 2:
+  hillClimberJump: 0.714703398671875
+  hillClimberFirstImprovementJump: 0.7114276156250001
+  oneLambdaDeterministic: 0.7091807818750001
+  strategyNN: 0.7153518422656249
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.18222450519841282ttest oneLambdaDeterministic - hillClimberJump : p-value 0.030454010269236585ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.39000449777874113ttest strategyNN - hillClimberJump : p-value 0.7842774613637162ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.11010687239074304ttest strategyNN - oneLambdaDeterministic : p-value 0.015670283577595888N 128 K 4:
+  hillClimberJump: 0.723040113671875
+  hillClimberFirstImprovementJump: 0.7273791291406252
+  oneLambdaDeterministic: 0.7197599602343749
+  strategyNN: 0.728782053515625
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 0.04639857502685705ttest oneLambdaDeterministic - hillClimberJump : p-value 0.17639810638540096ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 0.0017992212607137153ttest strategyNN - hillClimberJump : p-value 0.012621922480286986ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.5373847571625001ttest strategyNN - oneLambdaDeterministic : p-value 0.00041629636927865917N 128 K 8:
+  hillClimberJump: 0.7122875944531251
+  hillClimberFirstImprovementJump: 0.7207971642187501
+  oneLambdaDeterministic: 0.708750258046875
+  strategyNN: 0.7275533073437501
+ttestttest hillClimberFirstImprovementJump - hillClimberJump : p-value 9.950439935417426e-05ttest oneLambdaDeterministic - hillClimberJump : p-value 0.14812481807062367ttest oneLambdaDeterministic - hillClimberFirstImprovementJump : p-value 1.5024310839102095e-06ttest strategyNN - hillClimberJump : p-value 8.62390130810975e-09ttest strategyNN - hillClimberFirstImprovementJump : p-value 0.00822108833040534ttest strategyNN - oneLambdaDeterministic : p-value 1.5669625945037638e-10

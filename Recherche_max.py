@@ -40,9 +40,9 @@ file_with_max_value = None
 results_dict = {}
 
 
-f = open("images/results.txt", "w")
-f.write("Results test")
-f.close()
+result_file = open("images/results2.txt", "w")
+
+
 
 
 
@@ -65,7 +65,7 @@ for N in [32, 64, 128]:
 
         print("N : " + str(N) + " K : " + str_K)
 
-        list_all_strategy = []
+        dico_results_strategy = {}
 
         for type_strategy in list_strategy_name:
 
@@ -196,25 +196,30 @@ for N in [32, 64, 128]:
 
                 #print(list_scores)
 
-            list_all_strategy.append(list_all_scores)
+            dico_results_strategy[type_strategy] = list_all_scores
             print(type_strategy + " : " + str(np.mean(list_all_scores)/ N))
 
 
         # Enregistrer les résultats dans un fichier texte
-        with open("images/results.txt", "a") as result_file:
 
-            result_file.write("N " + str(N) + " K " + str(K) + ":\n")
-            for idx, strategy in enumerate(list_strategy_name):
-                mean_score = np.mean(list_all_strategy[idx])/ N
-                result_file.write(f"  {strategy}: {mean_score}\n")
 
-        '''
-        print("shapiro")
-        print(shapiro(list_list_strategy[0]))
-        print(shapiro(list_list_strategy[1]))
-        print(shapiro(list_list_strategy[2]))
-        print(shapiro(list_list_strategy[3]))
+        result_file.write("N " + str(N) + " K " + str(K) + ":\n")
+        for strategy in list_strategy_name:
+            mean_score = np.mean(dico_results_strategy[strategy])/ N
+            result_file.write(f"  {strategy}: {mean_score}\n")
 
-        print(stats.ttest_ind(list_list_strategy[0], list_list_strategy[1], list_list_strategy[2], list_list_strategy[3]))
-        #print(stats.ttest_ind(list_list_strategy[2], list_list_strategy[3]))
-        '''
+
+
+
+        result_file.write("ttest")
+        for i in range(len( list_strategy_name)):
+            for j in range(i):
+
+                strat1 = dico_results_strategy[list_strategy_name[i]]
+                strat2 = dico_results_strategy[list_strategy_name[j]]
+
+                test = stats.ttest_ind(strat1, strat2)
+
+                result_file.write("ttest " + list_strategy_name[i] + " - " + list_strategy_name[j] + " : p-value " + str(test[1]))
+
+result_file.close()
