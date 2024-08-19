@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --array=0-9
-#SBATCH --time=8:00:00
+#SBATCH --array=0-4
+#SBATCH --time=6:00:00
 #SBATCH -N1
 #SBATCH --no-kill
 #SBATCH --error=slurm-err-%j.out
@@ -12,4 +12,4 @@
 #SBATCH  -p SMP-short
 
 
-python NKL_HC.py $1 $2 $3 --seed $SLURM_ARRAY_TASK_ID
+python Main.py $1 $2 $3 --seed $SLURM_ARRAY_TASK_ID

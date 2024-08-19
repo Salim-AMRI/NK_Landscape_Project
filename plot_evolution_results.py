@@ -5,14 +5,15 @@ from plotly.subplots import make_subplots
 
 import plotly.graph_objs as go
 from os import walk
+from strategies.StrategyNNFitness_and_current import StrategyNNFitness_and_current
 
 
 
-N = 32
-K = 2
+N = 64
+K = 8
 
 
-list_LS = [ "NN_withTabu","NN_3","_hillClimber", "tabu" ,"IteratedhillClimber"]
+list_LS = [ "strategyNN_", "StrategyNNFitness_and_current", "strategyNNRanked_v2_10", "strategyNNRanked_v2_zScore","hillClimberJump"]
 
 
 
@@ -41,13 +42,12 @@ for idx, LS in enumerate(list_LS):
     min_scores = []
     min_times = []
 
-
-   
     
-    if(LS == "NN_3" or LS == "NN_withTabu"):
+    if("NN" in LS):
         
         min_nb_gen = 999999
-        
+        cpt = 0
+
         for file in filenames:
 
             if ( LS in  file and ("_" + str(N) + "_") in  file and ("K_" + str(K)) in  file):
@@ -55,20 +55,24 @@ for idx, LS in enumerate(list_LS):
                 data = pd.read_csv(mypath + file, delimiter=",").values    
             
                 nb_gen = data.shape[0]
-                
-                print(data)
-                
+
+                cpt += 1
                 if(nb_gen < min_nb_gen):
                     
                     min_nb_gen = nb_gen
-    
-        matrix_score = np.zeros((min_nb_gen, 10))
+
+        min_nb_gen = 100
+
+        print("cpt : " + str(cpt))
+        matrix_score = np.zeros((min_nb_gen, cpt))
     
     else:
         matrix_score = np.zeros((1, 10))
         
     cpt = 0
-    
+
+    min_nb_gen = 100
+
     for file in filenames:
 
         if ( LS in  file and ("_" + str(N) + "_") in  file and ("K_" + str(K)) in  file):
@@ -77,7 +81,7 @@ for idx, LS in enumerate(list_LS):
             data = pd.read_csv(mypath + file, delimiter=",").values              
 
 
-            if(LS == "NN_3" or LS == "NN_withTabu"):
+            if("NN" in LS):
                 matrix_score[:,cpt] = data[:min_nb_gen, 2]
                 
             else:
@@ -86,26 +90,27 @@ for idx, LS in enumerate(list_LS):
             
             cpt += 1
 
-
+    matrix_score = matrix_score/N
 
     print(min_nb_gen)
 
 
     x = list(np.array(range(min_nb_gen)))
     
-    if(LS == "NN_3" or LS == "NN_withTabu"):
+    if("NN" in LS):
     
         y = list(np.mean(matrix_score,1))
-        y_lower = list(np.mean(matrix_score,1) - np.std(matrix_score,1) )
-        y_upper = list(np.mean(matrix_score,1) + np.std(matrix_score,1))
+        y_lower = list(np.min(matrix_score,1) )
+        y_upper = list(np.max(matrix_score,1) )
 
     else:
         mean = np.mean(matrix_score,1)[0]
-        std = np.std(matrix_score,1)[0]
-        
+        min = np.min(matrix_score,1)[0]
+        max = np.max(matrix_score,1)[0]
+
         y = [mean for i in range(min_nb_gen)]
-        y_lower = [(mean - std) for i in range(min_nb_gen)]
-        y_upper = [(mean + std) for i in range(min_nb_gen)]
+        y_lower = [min for i in range(min_nb_gen)]
+        y_upper = [max for i in range(min_nb_gen)]
 
         print(y)
         print(y_lower)
@@ -114,24 +119,44 @@ for idx, LS in enumerate(list_LS):
 
     color = list_color[idx]
 
-    nameAlgo = LS
-    if(LS == "NN_3"):
-        nameAlgo = "NN"
-    if(LS == "_hillClimber"):
-        nameAlgo = "hillClimber"
-    if(LS == "IteratedhillClimber"):
-        nameAlgo = "Iterated hillClimber"    
-    
-    fig.add_trace(go.Scatter(
-                x=x,
-                y=y,
-                name=nameAlgo,
-                line=dict(color='rgb(' + str(color[0]) + ',' + str(color[1]) + ',' + str(color[2]) + ')'),
-                mode='lines'
-            )
-        )
-    
+    #"strategyNN_", "StrategyNNFitness_and_current", "strategyNNRanked_v2_10", "strategyNNRanked_v2_zScore", "hillClimberJump"]
 
+
+
+    nameAlgo = LS
+    if(LS == "strategyNN_"):
+        nameAlgo = "o1"
+    if(LS == "StrategyNNFitness_and_current"):
+        nameAlgo = "o2 "
+
+    if(LS == "strategyNNRanked_v2_10"):
+        nameAlgo = "o3"
+    if(LS == "strategyNNRanked_v2_zScore"):
+        nameAlgo = "o4"
+
+    if ("NN" in LS):
+        fig.add_trace(go.Scatter(
+                    x=x,
+                    y=y,
+                    name=nameAlgo,
+                    line=dict(color='rgb(' + str(color[0]) + ',' + str(color[1]) + ',' + str(color[2]) + ')'),
+                    mode='lines',
+                    legendgroup="NeuroLS",
+                    legendgrouptitle={'text': 'Neuro-LS'}
+                )
+            )
+    else:
+        fig.add_trace(go.Scatter(
+                    x=x,
+                    y=y,
+                    name="BHC+",
+                    line=dict(color='rgb(' + str(color[0]) + ',' + str(color[1]) + ',' + str(color[2]) + ')'),
+                    mode='lines',
+                    legendgroup="Baseline",
+                    legendgrouptitle={'text': 'Baseline'}
+
+                )
+            )
 
     fig.add_trace(go.Scatter(
             x=x+x[::-1], # x, then x reversed
@@ -140,27 +165,30 @@ for idx, LS in enumerate(list_LS):
             fillcolor='rgba(' + str(color[0]) + ',' + str(color[1]) + ',' + str(color[2]) + ',' + str(0.2) + ')',
             line=dict(color='rgba(255,255,255,0)'),
             hoverinfo="skip",
-            showlegend=False
+            showlegend=False,
+
         )
     )
 
 
 
 
+
+
 # fig.update_layout(yaxis_range=[min, max])
 
-fig.update_xaxes(title_text="Number of generations", title_font=dict(size=20))
+fig.update_xaxes(title_text="Number of CMA-ES generations", title_font=dict(size=12))
 
 
-fig.update_yaxes(title_text="Average score", title_font=dict(size=20))
+fig.update_yaxes(title_text="Average validation score", title_font=dict(size=12))
 
-fig.update_layout(title=dict(text="N_" + str(N) + "_K_" + str(K), font=dict(size=40)), legend=dict(font=dict(family="Courier", size=20, color="black")),
-                  legend_title=dict(font=dict(family="Courier", size=20, color="blue")))
+#fig.update_layout( legend=dict(font=dict(family="Courier", size=20, color="black")),
+#                  legend_title=dict(font=dict(family="Courier", size=20, color="blue")))
 
 fig.update_annotations(font_size=30)
 
 
-
-fig.write_image("images/results_neuroevolution_N_" + str(N) + "_K_" + str(K) + ".png")
+fig.show()
+#fig.write_image("images/results_neuroevolution_N_" + str(N) + "_K_" + str(K) + ".png")
 
 

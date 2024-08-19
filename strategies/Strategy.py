@@ -6,14 +6,7 @@ class Strategy:
         self.N = N
         self.neighDeltaFitness = []
 
-    def getNeighborsDeltaFitness(self, env):
 
-        self.neighDeltaFitness = []
-
-        for i in range(self.N):
-            self.neighDeltaFitness.append(env.getDeltaFitness(i))
-
-        return self.neighDeltaFitness
 
 
     def hashFunction(self, array):

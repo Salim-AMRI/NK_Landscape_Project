@@ -27,12 +27,12 @@ class StrategyNN(Strategy):
 
     def choose_action(self, env):
 
-        neighDeltaFitness = self.getNeighborsDeltaFitness(env)
+        neighDeltaFitness = env.getAllDeltaFitness()
 
         stacked_input_th = torch.tensor(neighDeltaFitness, dtype=torch.float32).unsqueeze(0).unsqueeze(2)
         out = self.nnet(stacked_input_th).squeeze(0)
 
-        return out.argmax().item()
+        return out.argmax().item(), neighDeltaFitness, out
 
 
     def update_weights(self, weights):

@@ -10,18 +10,18 @@ class HillClimberJump(Strategy):
 
     def choose_action(self, env):
 
-        neighDeltaFitness = self.getNeighborsDeltaFitness(env)
+        neighDeltaFitness = env.getAllDeltaFitness()
 
         neighDeltaFitness_np = np.array(neighDeltaFitness)
 
         if(max(neighDeltaFitness_np) > 0):
 
-            return int(np.argmax(np.array(neighDeltaFitness)))
+            return int(np.argmax(np.array(neighDeltaFitness))), None, None
 
         else:
             hash1, _ = self.hashFunction(env.game_state)
 
-            return hash1
+            return hash1, _, _
 
 
     def toString(self):

@@ -13,7 +13,7 @@ class HillClimberFirstImprovementJump(Strategy):
     def choose_action(self, env):
 
 
-        neighDeltaFitness = self.getNeighborsDeltaFitness(env)
+        neighDeltaFitness = env.getAllDeltaFitness()
 
 
         hash1, hash2 = self.hashFunction(env.game_state)
@@ -34,9 +34,9 @@ class HillClimberFirstImprovementJump(Strategy):
 
 
         if(delta > 0):
-            return best_move
+            return best_move, None, None
         else:
-            return int(hash2)
+            return int(hash2), None, None
 
 
 

@@ -22,6 +22,8 @@ class EnvNKlandscape:
 
         f.close()
 
+        self.currentScore = 0
+
         self.max_nb_turn = max_nb_turn
 
         self.game_state = np.random.randint(2, size=self.N)
@@ -78,6 +80,16 @@ class EnvNKlandscape:
         return deltaFitness
 
 
+    def getAllDeltaFitness(self):
+
+        self.neighDeltaFitness = []
+
+        for i in range(self.N):
+            self.neighDeltaFitness.append(self.getDeltaFitness(i))
+
+        return self.neighDeltaFitness
+
+
     def step(self, action):
         old_value = self.game_state[action]
         self.game_state[action] = (self.game_state[action] + 1) % 2
@@ -125,3 +137,12 @@ class EnvNKlandscape:
             sco += link[-1][int(bonus_index)]
 
         return sco
+
+
+    def setScore(self,currentScore):
+
+        self.currentScore = currentScore
+
+    def getScore(self):
+
+        return self.currentScore

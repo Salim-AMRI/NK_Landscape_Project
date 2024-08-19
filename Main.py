@@ -11,7 +11,7 @@ import random
 
 
 # Importation de modules personnalisés
-
+from EnvUBQPLandscape import EnvUBQPLandscape
 from Env_nk_landscape import EnvNKlandscape
 from Instances_Generator import Nk_generator
 
@@ -26,7 +26,21 @@ from strategies.StrategyNN import StrategyNN
 from strategies.strategyNNLastMoveIndicatorTabu import StrategyNNLastMoveIndicatorTabu
 from strategies.Tabu import Tabu
 
-def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False, starting_point = None):
+from strategies.StrategyNNRanked_v0 import StrategyNNRanked_v0
+from strategies.StrategyNNRanked_v1 import StrategyNNRanked_v1
+from strategies.StrategyNNRanked_v2 import StrategyNNRanked_v2
+
+#from strategies.StrategyNNRanked_v1_zScore import StrategyNNRanked_v1_zScore
+#from strategies.StrategyNNRanked_v2_zScore import StrategyNNRanked_v2_zScore
+
+from strategies.StrategyNNFitness import StrategyNNFitness
+
+from strategies.StrategyNNFitness_and_current import StrategyNNFitness_and_current
+
+from strategies.StrategyNNRanked_delta_rescale import StrategyNNRanked_delta_rescale
+
+
+def get_Score_trajectory(type_problem, strategy, N, K, path, nb_intances, idx_run, alpha=None, withLogs = False, starting_point = None):
 
     # Déterminez le numéro d'instance et de redémarrage
     num_instance = idx_run % nb_intances
@@ -46,21 +60,38 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
         # Créez un nom de fichier de journal personnalisé en fonction des paramètres
         log_filename = f"logTrajectory_{strategy.toString()}_N_{N}_K_{K}_nb_instances_test_{num_instance}_nb_restarts_{num_restart}.log"
 
+        input_filename = f"input_{strategy.toString()}_N_{N}_K_{K}_nb_instances_test_{num_instance}_nb_restarts_{num_restart}.log"
+
+        output_filename = f"output_{strategy.toString()}_N_{N}_K_{K}_nb_instances_test_{num_instance}_nb_restarts_{num_restart}.log"
+
 
         log_file = os.path.join(log_directory, log_filename)
 
-        file_trajectory = open(log_file, "w")
+        input_file = os.path.join(log_directory, input_filename)
+        output_file = os.path.join(log_directory, output_filename)
+
+        log_file_trajectory = open(log_file, "w")
+        input_file_trajectory = open(input_file, "w")
+        output_file_trajectory = open(output_file, "w")
 
 
 
 
 
-    name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(num_instance) + ".txt"
+
 
     strategy.reset()
 
     #print("launch instance " + name_instance)
-    env = EnvNKlandscape(name_instance, 2*N)
+
+    if(type_problem == "NK"):
+        name_instance = path + "nk_" + str(N) + "_" + str(K) + "_" + str(num_instance) + ".txt"
+        env = EnvNKlandscape(name_instance, 2*N)
+    elif(type_problem == "UBQP"):
+        name_instance = path + "puboi_evo_n_" + str(N) + "_t_" + str(K) + "_i_" + str(1001 + num_instance) + ".json"
+
+        env = EnvUBQPLandscape(name_instance, 2*N)
+
 
     if(starting_point is None):
         env.reset()
@@ -70,18 +101,32 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
     terminated = False
     current_score = env.score()
+
+    #print("current_score")
+    #print(current_score)
+
     bestScore = current_score
 
 
 
     while not terminated:
 
-        action_id = strategy.choose_action(env)
+        env.setScore(current_score)
+
+        action_id, input, output = strategy.choose_action(env)
+
 
 
         state, deltaScore, terminated = env.step(action_id)
         current_score += deltaScore
 
+        #print("current_score")
+        #print(current_score)
+
+        current_score_v2 = env.score()
+
+        #print("current_score_v2")
+        #print(current_score_v2)
 
         strategy.updateInfo(action_id, env.turn)
 
@@ -92,18 +137,29 @@ def get_Score_trajectory(strategy, N, K, path, nb_intances, idx_run, alpha=None,
 
             # Vous pouvez ajouter le suivi du nombre d'actions positives et supérieures ici
             # Suivre le nombre d'actions positives
-            positive_count = sum(1 for action in strategy.neighDeltaFitness if action > 0)
+
+            neighDeltaFitness = env.getAllDeltaFitness()
+
+            positive_count = sum(1 for action in neighDeltaFitness if action > 0)
 
             # Suivre le nombre d'actions supérieures à celle choisie par le réseau
-            actions_above_count = sum(1 for action in strategy.neighDeltaFitness if action > deltaScore)
+            actions_above_count = sum(1 for action in neighDeltaFitness if action > deltaScore)
 
             # Ajoutez cet appel pour enregistrer le score, l'action_id et sa contribution dans le fichier journal à chaque itération
-            if withLogs:
-                file_trajectory.write(f"Turn: {env.turn}, Current Score: {current_score}, Action_id: {action_id}, Action Contribution: {deltaScore}, Positive Actions: {positive_count}, Actions Above Chosen: {actions_above_count}, \n")
+
+            output = output.squeeze(-1).detach().numpy().tolist()
+
+
+
+            log_file_trajectory.write(f"Turn: {env.turn}, Current Score: {current_score}, Action_id: {action_id}, Action Contribution: {deltaScore}, Positive Actions: {positive_count}, Actions Above Chosen: {actions_above_count} \n")
+            input_file_trajectory.write(str(input) + "\n")
+            output_file_trajectory.write(str(output) + "\n")
 
 
     if(withLogs):
-        file_trajectory.close()
+        log_file_trajectory.close()
+        input_file_trajectory.close()
+        output_file_trajectory.close()
 
     return bestScore
 
@@ -117,18 +173,21 @@ if __name__ == '__main__':
 
     # Ajout des arguments
     parser.add_argument('type_strategy', type=str, help='type_strategy')
+    parser.add_argument('type_problem', type=str, default="NK", help='Taille de l\'instance')
     parser.add_argument('N', type=int, help='Taille de l\'instance')
     parser.add_argument('ListK', type=int, nargs='+', help='Paramètres K')
     parser.add_argument('--hiddenlayer_size', nargs='+', type=int, default=[10,5], help='Hidden layer sizes')
-    parser.add_argument('--nb_restarts', type=int, default=5, help='Nombre de redémarrages')
+    parser.add_argument('--nb_restarts', type=int, default=10, help='Nombre de redémarrages')
     parser.add_argument('--nb_instances', type=int, default=10, help='Nombre d\'instances')
-    parser.add_argument('--nb_jobs', type=int, default=-1, help='Nombre de jobs')
+    parser.add_argument('--nb_jobs', type=int, default=20, help='Nombre de jobs')
     parser.add_argument('--sigma_init', type=float, default=0.2, help='Ecart-type initial')
     parser.add_argument('--alpha', type=float, default=0.1, help='Nombre de bits perturbées')
     parser.add_argument('--max_generations', type=int, default=10000, help='Nombre de générations')
     parser.add_argument('--verbose', action='store_true', help='Afficher des informations de progression')
     parser.add_argument('--seed', type=int, default=0, help='Seed pour la génération aléatoire')
     parser.add_argument('--use_trainset',  default=False, action='store_true')
+
+
 
     # Analyse des arguments de ligne de commande
     args = parser.parse_args()
@@ -147,7 +206,7 @@ if __name__ == '__main__':
     max_generations = args.max_generations
     nb_jobs = args.nb_jobs
     hiddenlayer_size = args.hiddenlayer_size
-
+    type_problem = args.type_problem
 
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -222,7 +281,33 @@ if __name__ == '__main__':
 
 
         if(type_strategy == "strategyNN"):
-            list_strategy = [StrategyNN(N, hiddenlayer_size ) for idx_run in range(nb_instances * nb_restarts)]
+            list_strategy = [StrategyNN(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_v0"):
+            list_strategy = [StrategyNNRanked_v0(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_v1"):
+            list_strategy = [StrategyNNRanked_v1(N, hiddenlayer_size , remix=False) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_v2"):
+            list_strategy = [StrategyNNRanked_v2(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_v1_zScore"):
+            list_strategy = [StrategyNNRanked_v1_zScore(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_v2_zScore"):
+            list_strategy = [StrategyNNRanked_v2_zScore(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNFitness"):
+            list_strategy = [StrategyNNFitness(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "StrategyNNFitness_and_current"):
+            list_strategy = [StrategyNNFitness_and_current(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+        elif (type_strategy == "strategyNNRanked_delta_rescale"):
+            list_strategy = [StrategyNNRanked_delta_rescale(N, hiddenlayer_size, remix=False ) for idx_run in range(nb_instances * nb_restarts)]
+
+
 
         # if(type_strategy == "strategyNNSoftmax"):
         #     list_strategy = [StrategyNNSoftmax(N, hiddenlayer_size, True, True ) for idx_run in range(nb_instances * nb_restarts)]
@@ -277,7 +362,7 @@ if __name__ == '__main__':
 
                 all_list_scores = []
                 for idx_K, K in enumerate(ListK):
-                    list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, train_path_list[idx_K], nb_instances, idx_run) for idx_run
+                    list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)("NK",list_strategy[idx_run], N, K, train_path_list[idx_K], nb_instances, idx_run) for idx_run
                         in range(nb_instances * nb_restarts))
                     all_list_scores.extend(list_scores)
 
@@ -301,7 +386,7 @@ if __name__ == '__main__':
 
             all_list_scores = []
             for idx_K, K in enumerate(ListK):
-                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[0], N, K, valid_path_list[idx_K], nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
+                list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)("NK", list_strategy[0], N, K, valid_path_list[idx_K], nb_instances, idx_run) for idx_run  in range(nb_instances * nb_restarts))
                 all_list_scores.extend(list_scores)
                 print("Score moyen sur l'ensemble de validation pour N " + str(N) + " K " + str(K) + " : " + str(np.mean(list_scores)))
 
@@ -408,7 +493,7 @@ if __name__ == '__main__':
 
         all_list_scores = []
         for idx_K, K in enumerate(ListK):
-            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(list_strategy[idx_run], N, K, valid_path_list[idx_K], nb_instances, idx_run, alpha=alpha) for idx_run in
+            list_scores = Parallel(n_jobs=nb_jobs)(delayed(get_Score_trajectory)(type_problem, list_strategy[idx_run], N, K, valid_path_list[idx_K], nb_instances, idx_run, alpha=alpha) for idx_run in
             range(nb_instances * nb_restarts))
             print("Score moyen sur l'ensemble de validation pour N " + str(N) + " K " + str(K) + " : " + str(
                 np.mean(list_scores)))

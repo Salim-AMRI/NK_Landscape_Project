@@ -9,9 +9,9 @@ class HillClimber(Strategy):
 
     def choose_action(self, env):
 
-        neighDeltaFitness = self.getNeighborsDeltaFitness(env)
+        neighDeltaFitness = env.getAllDeltaFitness()
 
-        return int(np.argmax(np.array(neighDeltaFitness)))
+        return int(np.argmax(np.array(neighDeltaFitness))), None, None
 
     def toString(self):
 

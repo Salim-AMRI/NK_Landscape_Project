@@ -13,7 +13,7 @@ class OneLambdaDeterministic(Strategy):
     def choose_action(self, env):
 
 
-        neighDeltaFitness = self.getNeighborsDeltaFitness(env)
+        neighDeltaFitness = env.getAllDeltaFitness()
 
         hash1, hash2 = self.hashFunction(env.game_state)
 
@@ -48,7 +48,7 @@ class OneLambdaDeterministic(Strategy):
                 best_delta = delta
                 best_idx = move
 
-        return best_idx
+        return best_idx, None, None
 
 
     def toString(self):
